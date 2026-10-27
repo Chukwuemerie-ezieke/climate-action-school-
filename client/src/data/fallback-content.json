@@ -1,0 +1,946 @@
+{
+  "narrations": [
+    {
+      "scenarioId": "s01",
+      "text": "Generators burn fuel and release smoke that warms our air and hurts our lungs. Sunshine, on the other hand, is free and plenty in Nigeria. When you use daylight and solar lamps, you save fuel money and keep the air cleaner for everyone.",
+      "tip": "Try one solar lamp at home this week and notice how bright it is."
+    },
+    {
+      "scenarioId": "s02",
+      "text": "When plastic blocks a drain, rainwater has nowhere to go, so it floods roads and compounds, just like parts of Lagos after heavy rain. Clearing drains and recycling bottles keeps water moving and keeps our surroundings safe.",
+      "tip": "Pick up five bottles this week and put them in a recycling bag."
+    },
+    {
+      "scenarioId": "s03",
+      "text": "Bare soil blows away in harmattan wind and gets very hot in the sun. Tree roots hold the soil, leaves give shade, and plants cool the air around them. A green field is cooler, cleaner and much nicer to play on.",
+      "tip": "Plant one tree or shrub and water it every morning."
+    },
+    {
+      "scenarioId": "s04",
+      "text": "A leaking tap can waste thousands of litres in a month, enough water for many families. Leaks also make puddles where mosquitoes breed. Fixing a small leak early saves water, money and health.",
+      "tip": "Check the taps at home today and report any drip."
+    },
+    {
+      "scenarioId": "s05",
+      "text": "Single-use plastic is used for minutes but stays in the environment for hundreds of years. Reusable plates and lunch boxes cut that waste at the source, so bins do not overflow and the yard stays clean.",
+      "tip": "Carry a reusable lunch box to school tomorrow."
+    },
+    {
+      "scenarioId": "s06",
+      "text": "Harmattan dust is tiny and can reach deep into our lungs, making us cough. Fixing windows and planting hedges blocks dust before it enters, and wet-mopping keeps it from floating back up.",
+      "tip": "Wipe dusty surfaces with a damp cloth, not a dry one."
+    },
+    {
+      "scenarioId": "s07",
+      "text": "Heavy rain can flood low areas quickly, especially where drains are blocked. Preparing early, clearing drains and lifting books off the floor, means a flood causes little damage and nobody panics.",
+      "tip": "Ask your family: where would we go if floodwater rose near home?"
+    },
+    {
+      "scenarioId": "s08",
+      "text": "Mixed crops protect each other. Different roots use different soil layers, and leaves shade the ground so it keeps moisture. One crop alone is risky if rain fails or pests attack.",
+      "tip": "Grow two different crops side by side and watch which does better."
+    },
+    {
+      "scenarioId": "s09",
+      "text": "Dirty hands and broken toilets spread germs that cause stomach sickness. Soap and clean water break that chain. When toilets work and hands are washed, the whole school stays healthier and misses fewer lessons.",
+      "tip": "Wash hands with soap before eating and after using the toilet."
+    },
+    {
+      "scenarioId": "s10",
+      "text": "Paper comes from trees, so wasting paper wastes trees too. Reusing one-sided paper and recycling the rest saves trees, water and energy, and keeps smoke out of our air.",
+      "tip": "Use both sides of your notebook paper before starting a new page."
+    },
+    {
+      "scenarioId": "s11",
+      "text": "Solar panels turn sunshine into electricity without smoke or fuel bills. They cost money at first, but then the sun does the work for years. That is why solar is growing fast across Nigeria.",
+      "tip": "Find one thing at home that could run on solar power."
+    },
+    {
+      "scenarioId": "s12",
+      "text": "Mosquitoes lay eggs in still water, even in a bottle cap. Clearing tyres, buckets and puddles removes their nursery, so fewer mosquitoes grow up to bite and spread malaria.",
+      "tip": "Turn over any container holding water around your home."
+    },
+    {
+      "scenarioId": "s13",
+      "text": "Charcoal smoke fills kitchens and lungs, and making charcoal cuts down trees. Clean stoves burn less fuel and make less smoke, so cooking is safer for the cook and kinder to forests.",
+      "tip": "Cook with a lid on the pot to save fuel and time."
+    },
+    {
+      "scenarioId": "s14",
+      "text": "Rain falls free on our roofs, yet many schools buy water in dry season. Gutters and tanks catch that rain and store it for later, turning a wet-season flood risk into dry-season water.",
+      "tip": "Watch where rain runs off your roof. Could a tank catch it?"
+    },
+    {
+      "scenarioId": "s15",
+      "text": "Wasted food wastes all the water, work and money used to grow it. Choosing portions, sharing extra food and composting scraps turns waste into something useful for the garden.",
+      "tip": "Take only what you can finish at lunch today."
+    },
+    {
+      "scenarioId": "s16",
+      "text": "Batteries hold chemicals that can leak into soil and water and poison them. Collecting batteries separately keeps those chemicals out of our ground and lets them be handled safely.",
+      "tip": "Keep old batteries in a box, never in the normal bin."
+    },
+    {
+      "scenarioId": "s17",
+      "text": "In very hot weather our bodies lose water fast, and our brains work more slowly. Drinking water, resting in shade and working in cooler hours helps us stay safe and think clearly.",
+      "tip": "Drink water before you feel thirsty on hot days."
+    },
+    {
+      "scenarioId": "s18",
+      "text": "Old electronics hold metals and chemicals that harm soil and water if burned or dumped. Repairing what can be fixed and recycling the rest safely protects our health and saves precious materials.",
+      "tip": "Ask an adult before opening any old electronic device."
+    },
+    {
+      "scenarioId": "s19",
+      "text": "Idling engines burn fuel for nothing and pour exhaust into the air pupils breathe. Switching engines off while waiting saves fuel and gives everyone cleaner air at the gate.",
+      "tip": "If a vehicle waits more than a minute, switching it off helps."
+    },
+    {
+      "scenarioId": "s20",
+      "text": "Fast rainwater washes soil away, a process called erosion. Grass roots, shrubs and drains slow water down so soil stays where plants need it and fences stay standing.",
+      "tip": "Notice where rain runs fastest in your compound."
+    },
+    {
+      "scenarioId": "s21",
+      "text": "Making new clothes and uniforms uses water, energy and materials. Swapping and repairing good uniforms saves families money and keeps useful clothes out of the waste pile.",
+      "tip": "Pass on a uniform you have outgrown to someone who needs it."
+    },
+    {
+      "scenarioId": "s22",
+      "text": "When water is scarce, prices rise and people drink less, which hurts health. Storing rainwater and fixing leaks gives a school its own supply, so it is not at the mercy of price hikes.",
+      "tip": "Never leave a tap running while brushing your teeth."
+    },
+    {
+      "scenarioId": "s23",
+      "text": "Burning leaves makes smoke that hurts lungs and eyes. Composting leaves instead turns them into dark, rich food for soil, helping plants grow without any smoke at all.",
+      "tip": "Start a small compost heap with dry leaves at home."
+    },
+    {
+      "scenarioId": "s24",
+      "text": "Litter looks untidy, but it also blocks drains and can harm animals. Bins in the right places, a shared rota and praise for clean classes turn tidiness into a habit everyone owns.",
+      "tip": "If you see litter, pick it up even if you did not drop it."
+    },
+    {
+      "scenarioId": "s25",
+      "text": "Mulch is a cover of dry leaves or grass on soil. It keeps water in the ground, cools roots and feeds the soil as it breaks down. Drought-tough crops and morning watering help gardens survive dry season.",
+      "tip": "Cover garden soil with dry grass to keep moisture in."
+    },
+    {
+      "scenarioId": "s26",
+      "text": "Smoke and loud noise make learning hard and can harm health over time. Talking calmly with neighbours, planting hedges and sealing gaps all reduce noise and smoke without a quarrel.",
+      "tip": "If smoke bothers you, move to fresh air and tell an adult."
+    },
+    {
+      "scenarioId": "s27",
+      "text": "Printing uses paper from trees and ink and electricity. Proofing before printing and using both sides of paper cuts waste without hurting learning at all.",
+      "tip": "Read your work on screen once before printing it."
+    },
+    {
+      "scenarioId": "s28",
+      "text": "Stagnant water breeds mosquitoes and can carry germs. Filling low spots and clearing drains lets rain flow away, so playgrounds stay dry, safe and fun.",
+      "tip": "After rain, point out puddles that stay for days to an adult."
+    },
+    {
+      "scenarioId": "s29",
+      "text": "Kerosene lamps give dim, smoky light that strains eyes and can cause fires. Solar lanterns give bright, clean light charged by the sun, so evening study is safer and easier.",
+      "tip": "Study near a window in daylight whenever you can."
+    },
+    {
+      "scenarioId": "s30",
+      "text": "Dumping waste by a wall spreads smell, germs and blocked drains. When a community agrees on bins and clean-up days, the same wall can become a clean, proud boundary instead.",
+      "tip": "Never dump waste where people live, learn or play."
+    },
+    {
+      "scenarioId": "s31",
+      "text": "Sharing textbooks means fewer copies need to be printed, saving paper and money. A fair rota lets every pupil read, while photocopying whole books wastes paper and breaks copyright rules.",
+      "tip": "Treat shared books gently so the next pupil enjoys them too."
+    },
+    {
+      "scenarioId": "s32",
+      "text": "A managed pond with fish that eat mosquito larvae can teach water science safely. An unmanaged open pond, though, becomes a mosquito nursery, so rules and care matter as much as the pond itself.",
+      "tip": "Never play near water without an adult watching."
+    }
+  ],
+  "questions": [
+    {
+      "q": "What is climate change mainly caused by?",
+      "options": [
+        "Too many trees",
+        "Burning fossil fuels releasing greenhouse gases",
+        "Too much rain in one year",
+        "The moon moving closer"
+      ],
+      "answer": 1,
+      "explanation": "Burning coal, oil and gas releases greenhouse gases that trap heat in the atmosphere.",
+      "topic": "climate",
+      "difficulty": 1
+    },
+    {
+      "q": "Which gas traps heat in the atmosphere and warms the Earth?",
+      "options": [
+        "Oxygen",
+        "Nitrogen",
+        "Carbon dioxide",
+        "Helium"
+      ],
+      "answer": 2,
+      "explanation": "Carbon dioxide acts like a blanket, holding heat in the atmosphere.",
+      "topic": "climate",
+      "difficulty": 1
+    },
+    {
+      "q": "Harmattan in Nigeria is best described as:",
+      "options": [
+        "A rainy season wind",
+        "A dry, dusty wind from the Sahara",
+        "A coastal breeze",
+        "A storm from the Atlantic"
+      ],
+      "answer": 1,
+      "explanation": "Harmattan is the dry, dusty north-east trade wind that blows from the Sahara.",
+      "topic": "climate",
+      "difficulty": 1
+    },
+    {
+      "q": "Which action most helps to slow climate change?",
+      "options": [
+        "Burning more fuel",
+        "Planting and protecting trees",
+        "Cutting down forests",
+        "Using more plastic bags"
+      ],
+      "answer": 1,
+      "explanation": "Trees absorb carbon dioxide from the air as they grow.",
+      "topic": "climate",
+      "difficulty": 1
+    },
+    {
+      "q": "Why does Lagos flood easily during heavy rain?",
+      "options": [
+        "It is too close to the moon",
+        "Low land, blocked drains and heavy rain together",
+        "Too many trees",
+        "It rains only at night"
+      ],
+      "answer": 1,
+      "explanation": "Low-lying land floods when heavy rain meets blocked or overflowing drains.",
+      "topic": "disaster",
+      "difficulty": 1
+    },
+    {
+      "q": "What should you do first when floodwater rises near school?",
+      "options": [
+        "Play in the water",
+        "Move to higher ground and tell an adult",
+        "Hide under a tree",
+        "Drink the floodwater"
+      ],
+      "answer": 1,
+      "explanation": "Higher ground is safer, and adults can organise help.",
+      "topic": "disaster",
+      "difficulty": 1
+    },
+    {
+      "q": "Which is a renewable source of energy?",
+      "options": [
+        "Coal",
+        "Petrol",
+        "Sunlight",
+        "Diesel"
+      ],
+      "answer": 2,
+      "explanation": "Sunlight is renewed every day and does not run out like coal or oil.",
+      "topic": "energy",
+      "difficulty": 1
+    },
+    {
+      "q": "Solar panels work by:",
+      "options": [
+        "Burning the sun's rays",
+        "Turning sunlight into electricity",
+        "Storing rainwater",
+        "Heating coal"
+      ],
+      "answer": 1,
+      "explanation": "Solar cells convert light energy from the sun into electrical energy.",
+      "topic": "energy",
+      "difficulty": 1
+    },
+    {
+      "q": "Which cooking fuel makes the least indoor smoke?",
+      "options": [
+        "Firewood in an open fire",
+        "Charcoal indoors",
+        "Clean LPG or electric stove with ventilation",
+        "Kerosene lamp"
+      ],
+      "answer": 2,
+      "explanation": "Clean stoves and LPG burn more completely and release far less smoke indoors.",
+      "topic": "energy",
+      "difficulty": 2
+    },
+    {
+      "q": "Why should engines not idle for a long time?",
+      "options": [
+        "They get cold",
+        "They waste fuel and pollute the air",
+        "They charge the battery",
+        "They clean the road"
+      ],
+      "answer": 1,
+      "explanation": "An idling engine burns fuel and releases exhaust without moving the vehicle.",
+      "topic": "energy",
+      "difficulty": 1
+    },
+    {
+      "q": "Recycling means:",
+      "options": [
+        "Burning waste",
+        "Turning used materials into new products",
+        "Burying waste",
+        "Throwing waste in a river"
+      ],
+      "answer": 1,
+      "explanation": "Recycling reprocesses used materials so they can be made into new things.",
+      "topic": "waste",
+      "difficulty": 1
+    },
+    {
+      "q": "Which item should NOT go in a normal bin?",
+      "options": [
+        "Paper",
+        "Old batteries",
+        "Banana peel",
+        "Cardboard"
+      ],
+      "answer": 1,
+      "explanation": "Batteries contain chemicals that can leak into soil and water.",
+      "topic": "waste",
+      "difficulty": 1
+    },
+    {
+      "q": "Compost is made from:",
+      "options": [
+        "Plastic bottles",
+        "Rotting plant and food scraps",
+        "Metal cans",
+        "Glass"
+      ],
+      "answer": 1,
+      "explanation": "Compost is decayed organic matter that enriches soil.",
+      "topic": "waste",
+      "difficulty": 1
+    },
+    {
+      "q": "The best way to reduce plastic waste is to:",
+      "options": [
+        "Use more single-use bags",
+        "Reuse bags, bottles and containers",
+        "Burn plastic daily",
+        "Buy plastic every day"
+      ],
+      "answer": 1,
+      "explanation": "Reusing an item avoids making, buying and throwing away a new one.",
+      "topic": "waste",
+      "difficulty": 1
+    },
+    {
+      "q": "Why is burning plastic dangerous?",
+      "options": [
+        "It smells nice",
+        "It releases toxic smoke",
+        "It makes the ground fertile",
+        "It saves money"
+      ],
+      "answer": 1,
+      "explanation": "Burning plastic releases harmful chemicals into the air people breathe.",
+      "topic": "waste",
+      "difficulty": 1
+    },
+    {
+      "q": "Where does most of Nigeria's tap and borehole water come from?",
+      "options": [
+        "The moon",
+        "Rain and underground water sources",
+        "Ocean waves",
+        "Desert sand"
+      ],
+      "answer": 1,
+      "explanation": "Rain replenishes rivers and underground aquifers that boreholes tap into.",
+      "topic": "water",
+      "difficulty": 1
+    },
+    {
+      "q": "Which saves the most water at home?",
+      "options": [
+        "Leaving taps running",
+        "Fixing leaks and turning taps off",
+        "Washing cars daily",
+        "Watering at midday"
+      ],
+      "answer": 1,
+      "explanation": "Leaks waste water silently, and closed taps stop waste while you brush or soap up.",
+      "topic": "water",
+      "difficulty": 1
+    },
+    {
+      "q": "Rainwater harvesting means:",
+      "options": [
+        "Catching and storing rain for later use",
+        "Making rain with machines",
+        "Drinking rain directly from clouds",
+        "Flooding a farm"
+      ],
+      "answer": 0,
+      "explanation": "Gutters and tanks collect rainwater so it can be used in dry periods.",
+      "topic": "water",
+      "difficulty": 1
+    },
+    {
+      "q": "Why is stagnant water dangerous?",
+      "options": [
+        "It is too clean",
+        "Mosquitoes breed in it",
+        "It tastes sweet",
+        "Fish live in it"
+      ],
+      "answer": 1,
+      "explanation": "Mosquitoes lay eggs in still water, increasing malaria risk.",
+      "topic": "water",
+      "difficulty": 1
+    },
+    {
+      "q": "Safe drinking water should be:",
+      "options": [
+        "Cloudy and smelly",
+        "Clear, clean and free from germs",
+        "Taken from any puddle",
+        "Mixed with soap"
+      ],
+      "answer": 1,
+      "explanation": "Safe water is free from germs and harmful chemicals that cause sickness.",
+      "topic": "water",
+      "difficulty": 1
+    },
+    {
+      "q": "Why must we wash hands with soap?",
+      "options": [
+        "Soap makes hands smell nice only",
+        "Soap removes germs that cause sickness",
+        "Soap colours the skin",
+        "Soap is a food"
+      ],
+      "answer": 1,
+      "explanation": "Soap lifts germs and dirt off skin so they wash away with water.",
+      "topic": "sanitation",
+      "difficulty": 1
+    },
+    {
+      "q": "Open defecation is harmful because:",
+      "options": [
+        "It fertilises roads",
+        "Germs spread to water, food and hands",
+        "It is traditional everywhere",
+        "It saves toilet paper"
+      ],
+      "answer": 1,
+      "explanation": "Waste left in the open lets germs reach water sources, food and hands.",
+      "topic": "sanitation",
+      "difficulty": 1
+    },
+    {
+      "q": "A tippy-tap is:",
+      "options": [
+        "A type of dance",
+        "A simple handwashing device using a hanging container",
+        "A water pump for cars",
+        "A school bell"
+      ],
+      "answer": 1,
+      "explanation": "A tippy-tap lets water flow in a small stream for handwashing with little water.",
+      "topic": "sanitation",
+      "difficulty": 2
+    },
+    {
+      "q": "Good sanitation in school helps pupils by:",
+      "options": [
+        "Making lessons longer",
+        "Reducing sickness and missed school days",
+        "Increasing homework",
+        "Closing the school"
+      ],
+      "answer": 1,
+      "explanation": "Clean toilets and handwashing cut the spread of diarrhoea and other illnesses.",
+      "topic": "sanitation",
+      "difficulty": 1
+    },
+    {
+      "q": "Which crop is a major Nigerian staple that grows from stem cuttings?",
+      "options": [
+        "Wheat",
+        "Cassava",
+        "Apples",
+        "Grapes"
+      ],
+      "answer": 1,
+      "explanation": "Cassava is widely grown in Nigeria and planted from stem cuttings.",
+      "topic": "agriculture",
+      "difficulty": 1
+    },
+    {
+      "q": "Mulching helps a farm because it:",
+      "options": [
+        "Makes soil hotter",
+        "Keeps moisture in soil and stops weeds",
+        "Kills all plants",
+        "Uses more water"
+      ],
+      "answer": 1,
+      "explanation": "A mulch cover shades soil, slows evaporation and suppresses weeds.",
+      "topic": "agriculture",
+      "difficulty": 2
+    },
+    {
+      "q": "Crop rotation means:",
+      "options": [
+        "Planting the same crop every year",
+        "Growing different crops on the same land in turn",
+        "Spinning crops in a machine",
+        "Planting only at night"
+      ],
+      "answer": 1,
+      "explanation": "Rotating crops rests the soil and breaks pest and disease cycles.",
+      "topic": "agriculture",
+      "difficulty": 2
+    },
+    {
+      "q": "Erosion is:",
+      "options": [
+        "Water or wind wearing away soil",
+        "Planting trees",
+        "Watering crops",
+        "Harvesting yams"
+      ],
+      "answer": 0,
+      "explanation": "Erosion moves topsoil away, leaving land less fertile.",
+      "topic": "agriculture",
+      "difficulty": 1
+    },
+    {
+      "q": "Which farming practice protects soil on a slope?",
+      "options": [
+        "Planting along the slope",
+        "Terracing and planting across the slope",
+        "Removing all plants",
+        "Burning the slope"
+      ],
+      "answer": 1,
+      "explanation": "Terraces and contour planting slow water so it does not wash soil downhill.",
+      "topic": "agriculture",
+      "difficulty": 2
+    },
+    {
+      "q": "A greenhouse gas is a gas that:",
+      "options": [
+        "Makes plants green",
+        "Traps heat in the atmosphere",
+        "Cools the Earth",
+        "Only comes from cars"
+      ],
+      "answer": 1,
+      "explanation": "Greenhouse gases absorb heat radiated from Earth and warm the atmosphere.",
+      "topic": "climate",
+      "difficulty": 2
+    },
+    {
+      "q": "Deforestation worsens climate change because:",
+      "options": [
+        "Trees make rain stop",
+        "Fewer trees absorb less carbon dioxide",
+        "Trees cause floods",
+        "Forests use too much water"
+      ],
+      "answer": 1,
+      "explanation": "Cutting forests removes trees that would otherwise store carbon.",
+      "topic": "climate",
+      "difficulty": 2
+    },
+    {
+      "q": "Which Nigerian season brings the heaviest rain to the south?",
+      "options": [
+        "Harmattan",
+        "Rainy season, roughly April to October",
+        "Dry season only",
+        "Winter"
+      ],
+      "answer": 1,
+      "explanation": "Southern Nigeria's rainy season generally runs from about April to October.",
+      "topic": "climate",
+      "difficulty": 2
+    },
+    {
+      "q": "An early warning for floods helps communities to:",
+      "options": [
+        "Ignore the rain",
+        "Prepare, move valuables and stay safe before flooding",
+        "Plant more crops in rivers",
+        "Open all drains at once"
+      ],
+      "answer": 1,
+      "explanation": "Early warnings give time to prepare and move to safety.",
+      "topic": "disaster",
+      "difficulty": 1
+    },
+    {
+      "q": "During a thunderstorm, the safest place is:",
+      "options": [
+        "Under a tall tree",
+        "In open water",
+        "Inside a strong building, away from windows",
+        "On a metal roof"
+      ],
+      "answer": 2,
+      "explanation": "Buildings protect you from lightning and falling objects; trees attract lightning.",
+      "topic": "disaster",
+      "difficulty": 1
+    },
+    {
+      "q": "Drought means:",
+      "options": [
+        "Too much rain",
+        "A long period with very little rain",
+        "A flood",
+        "A cold wind"
+      ],
+      "answer": 1,
+      "explanation": "Drought is an extended dry period that stresses crops and water supplies.",
+      "topic": "disaster",
+      "difficulty": 1
+    },
+    {
+      "q": "Which energy source does NOT release greenhouse gases when it generates electricity?",
+      "options": [
+        "Coal plant",
+        "Diesel generator",
+        "Wind turbine",
+        "Petrol engine"
+      ],
+      "answer": 2,
+      "explanation": "Wind turbines generate electricity from moving air without burning fuel.",
+      "topic": "energy",
+      "difficulty": 2
+    },
+    {
+      "q": "Energy efficiency means:",
+      "options": [
+        "Using more energy for the same job",
+        "Using less energy to do the same job",
+        "Turning everything off forever",
+        "Buying bigger machines"
+      ],
+      "answer": 1,
+      "explanation": "Efficient devices, like LED bulbs, do the same work with less energy.",
+      "topic": "energy",
+      "difficulty": 2
+    },
+    {
+      "q": "A solar lantern is better than a kerosene lamp for study because it:",
+      "options": [
+        "Is dimmer",
+        "Gives bright, smoke-free light",
+        "Needs fuel every night",
+        "Makes noise"
+      ],
+      "answer": 1,
+      "explanation": "Solar lanterns charge by day and give clean, steady light at night.",
+      "topic": "energy",
+      "difficulty": 1
+    },
+    {
+      "q": "Which waste item takes the longest to break down in nature?",
+      "options": [
+        "Banana peel",
+        "Paper",
+        "Plastic bottle",
+        "Leaves"
+      ],
+      "answer": 2,
+      "explanation": "A plastic bottle can last hundreds of years in the environment.",
+      "topic": "waste",
+      "difficulty": 2
+    },
+    {
+      "q": "Sorting waste at source means:",
+      "options": [
+        "Mixing all waste together",
+        "Separating paper, plastic and food waste where it is produced",
+        "Burning waste at home",
+        "Hiding waste"
+      ],
+      "answer": 1,
+      "explanation": "Sorting makes recycling and composting possible and keeps harmful waste apart.",
+      "topic": "waste",
+      "difficulty": 2
+    },
+    {
+      "q": "E-waste should be:",
+      "options": [
+        "Burned in the open",
+        "Taken to safe recycling, never burned or dumped",
+        "Buried in the garden",
+        "Thrown in a river"
+      ],
+      "answer": 1,
+      "explanation": "Electronics contain harmful substances that need safe handling and recycling.",
+      "topic": "waste",
+      "difficulty": 2
+    },
+    {
+      "q": "Which is the safest way to store drinking water at home?",
+      "options": [
+        "Open bucket on the floor",
+        "Clean, covered container",
+        "Old chemical drum",
+        "Unwashed jerrycan"
+      ],
+      "answer": 1,
+      "explanation": "A clean, covered container keeps germs, dust and insects out of water.",
+      "topic": "water",
+      "difficulty": 1
+    },
+    {
+      "q": "Watering plants in the early morning or evening is best because:",
+      "options": [
+        "Plants sleep at noon",
+        "Less water evaporates in cooler hours",
+        "Water is cheaper then",
+        "Pests sleep then"
+      ],
+      "answer": 1,
+      "explanation": "Cooler hours mean less evaporation, so more water reaches plant roots.",
+      "topic": "water",
+      "difficulty": 2
+    },
+    {
+      "q": "A borehole is:",
+      "options": [
+        "A hole for planting trees",
+        "A deep well drilled to reach groundwater",
+        "A type of dam",
+        "A rain gauge"
+      ],
+      "answer": 1,
+      "explanation": "Boreholes reach water stored underground in aquifers.",
+      "topic": "water",
+      "difficulty": 1
+    },
+    {
+      "q": "Which habit most reduces cholera risk?",
+      "options": [
+        "Drinking untreated river water",
+        "Washing hands, using clean toilets and safe water",
+        "Eating food left in the open",
+        "Sharing cups with sick people"
+      ],
+      "answer": 1,
+      "explanation": "Cholera spreads through contaminated water and hands, so hygiene breaks the chain.",
+      "topic": "sanitation",
+      "difficulty": 2
+    },
+    {
+      "q": "Why should school toilets be cleaned regularly?",
+      "options": [
+        "To use more water",
+        "To stop germs spreading and keep pupils using them",
+        "To make them smell of chemicals",
+        "To close them often"
+      ],
+      "answer": 1,
+      "explanation": "Clean, working toilets are used safely; dirty ones push pupils to unsafe places.",
+      "topic": "sanitation",
+      "difficulty": 1
+    },
+    {
+      "q": "How should used sanitary materials be disposed of in school?",
+      "options": [
+        "Thrown on the playground",
+        "Wrapped, bagged and put in a covered bin for safe disposal",
+        "Flushed in large amounts",
+        "Left in classroom desks"
+      ],
+      "answer": 1,
+      "explanation": "Wrapping and binning sanitary waste safely stops germs spreading and keeps toilets working.",
+      "topic": "sanitation",
+      "difficulty": 2
+    },
+    {
+      "q": "Intercropping means:",
+      "options": [
+        "Growing two or more crops together on the same land",
+        "Growing crops indoors only",
+        "Cutting crops early",
+        "Growing crops without soil"
+      ],
+      "answer": 0,
+      "explanation": "Intercropping mixes crops so they use soil, light and water differently.",
+      "topic": "agriculture",
+      "difficulty": 2
+    },
+    {
+      "q": "Why do farmers add compost to soil?",
+      "options": [
+        "To make soil harder",
+        "To add nutrients and improve soil structure",
+        "To kill crops",
+        "To dry the soil out"
+      ],
+      "answer": 1,
+      "explanation": "Compost feeds soil life and adds nutrients plants need to grow.",
+      "topic": "agriculture",
+      "difficulty": 1
+    },
+    {
+      "q": "Which animal helps soil by breaking down dead leaves?",
+      "options": [
+        "Earthworm",
+        "Mosquito",
+        "Rat",
+        "Snake"
+      ],
+      "answer": 0,
+      "explanation": "Earthworms break down organic matter and tunnel air and water into soil.",
+      "topic": "agriculture",
+      "difficulty": 1
+    },
+    {
+      "q": "Climate adaptation means:",
+      "options": [
+        "Stopping all weather",
+        "Adjusting to climate changes that are already happening",
+        "Ignoring climate change",
+        "Moving to another planet"
+      ],
+      "answer": 1,
+      "explanation": "Adaptation includes flood defences, drought crops and early warnings.",
+      "topic": "climate",
+      "difficulty": 3
+    },
+    {
+      "q": "Which human activity releases the most carbon dioxide globally?",
+      "options": [
+        "Burning fossil fuels for energy and transport",
+        "Planting gardens",
+        "Recycling paper",
+        "Riding bicycles"
+      ],
+      "answer": 0,
+      "explanation": "Burning coal, oil and gas for energy, industry and transport is the largest source.",
+      "topic": "climate",
+      "difficulty": 3
+    },
+    {
+      "q": "Sea-level rise threatens coastal Nigerian cities mainly because:",
+      "options": [
+        "The sea gets warmer only",
+        "Higher seas worsen flooding and erosion on low coasts",
+        "Fish move away",
+        "Rain stops"
+      ],
+      "answer": 1,
+      "explanation": "Rising seas push floodwater further inland over low-lying coastal land.",
+      "topic": "disaster",
+      "difficulty": 3
+    },
+    {
+      "q": "A community flood plan should include:",
+      "options": [
+        "Safe routes, meeting points and emergency contacts",
+        "Only one person's phone number",
+        "A plan to stay in floodwater",
+        "No warnings at all"
+      ],
+      "answer": 0,
+      "explanation": "A good plan tells everyone where to go and who to contact before flooding.",
+      "topic": "disaster",
+      "difficulty": 2
+    },
+    {
+      "q": "Which bulb uses the least electricity for the same brightness?",
+      "options": [
+        "Incandescent bulb",
+        "LED bulb",
+        "Kerosene lamp",
+        "Candle"
+      ],
+      "answer": 1,
+      "explanation": "LED bulbs convert most electricity into light, not heat.",
+      "topic": "energy",
+      "difficulty": 1
+    },
+    {
+      "q": "Biogas is made from:",
+      "options": [
+        "Plastic waste",
+        "Decomposing animal and plant waste",
+        "Coal mining",
+        "Seawater"
+      ],
+      "answer": 1,
+      "explanation": "Microbes break down organic waste without air and release methane-rich biogas.",
+      "topic": "energy",
+      "difficulty": 3
+    },
+    {
+      "q": "The 'reduce' in reduce, reuse, recycle means:",
+      "options": [
+        "Buy less and use less in the first place",
+        "Recycle everything",
+        "Burn less",
+        "Reuse less"
+      ],
+      "answer": 0,
+      "explanation": "Reducing comes first: less consumption means less waste to manage.",
+      "topic": "waste",
+      "difficulty": 1
+    },
+    {
+      "q": "Leachate from a dumpsite is dangerous because it:",
+      "options": [
+        "Is clean water",
+        "Can pollute soil and groundwater with chemicals",
+        "Smells like flowers",
+        "Helps plants grow"
+      ],
+      "answer": 1,
+      "explanation": "Liquid draining from waste carries dissolved chemicals into soil and water.",
+      "topic": "waste",
+      "difficulty": 3
+    },
+    {
+      "q": "Why cover stored water?",
+      "options": [
+        "To keep it warm",
+        "To stop mosquitoes laying eggs and germs entering",
+        "To hide it",
+        "To make it taste better"
+      ],
+      "answer": 1,
+      "explanation": "Covered water stays cleaner and denies mosquitoes a breeding site.",
+      "topic": "water",
+      "difficulty": 1
+    },
+    {
+      "q": "Which water source is most likely safe after boiling and covering?",
+      "options": [
+        "Floodwater mixed with sewage",
+        "Clear water from a protected well, boiled before drinking",
+        "Stagnant gutter water",
+        "Water from a chemical drum"
+      ],
+      "answer": 1,
+      "explanation": "Boiling kills germs, but water mixed with sewage or chemicals needs proper treatment.",
+      "topic": "water",
+      "difficulty": 3
+    }
+  ]
+}
