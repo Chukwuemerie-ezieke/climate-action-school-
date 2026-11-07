@@ -7,7 +7,8 @@ const fallback = require('../client/src/data/fallback-content.json');
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5';
-const TIMEOUT_MS = 5000;
+const TIMEOUT_MS = 5000;          // narration and hints: short, keep the game snappy
+const QUIZ_TIMEOUT_MS = 20000;    // 10 questions of JSON take longer; the client prefetches
 const AGE_BANDS = ['8-11', '12-14', '15-17'];
 const TOPICS = ['climate', 'waste', 'energy', 'water', 'sanitation', 'agriculture', 'disaster'];
 
@@ -34,11 +35,14 @@ function wordCount(text) {
   return String(text || '').trim().split(/\s+/).filter(Boolean).length;
 }
 
+// Age-appropriate guard: reject obvious off-topic / unsafe content.
+// Whole words only, so "skills", "Essex" or "bombastic" are not caught.
+// "kill" is deliberately not listed: science text for children legitimately
+// says "boiling kills germs" or "fish eat and kill mosquito larvae".
+const BANNED_WORDS = /\b(murder\w*|suicid\w*|porn\w*|sex|sexual|terroris\w*|bombs?|bombing|guns?|rape\w*)\b/i;
 function isCleanText(text) {
-  // Age-appropriate guard: reject obvious off-topic / unsafe content.
   if (!text || typeof text !== 'string') return false;
-  const banned = ['kill', 'murder', 'suicide', 'porn', 'sex ', 'terrorist', 'bomb '];
-  return !banned.some((w) => text.toLowerCase().includes(w));
+  return !BANNED_WORDS.test(text);
 }
 
 async function callClaude(system, user, maxTokens, timeoutMs = TIMEOUT_MS) {
@@ -143,7 +147,7 @@ async function quiz({ ageBand: band, topics }, { ai = true } = {}) {
     'Reply ONLY with JSON: {"questions": [{"question": "...", "options": ["a","b","c","d"], "answer": 0, "explanation": "One sentence.", "topic": "climate", "difficulty": 1}]}. ' +
     'Write exactly 10 questions, 4 options each, exactly one correct answer, one-sentence explanations.';
   try {
-    const raw = await callClaude(system, `Age band: ${b}. Topics to favour: ${favoured.join(', ') || 'all'}.`, 2000);
+    const raw = await callClaude(system, `Age band: ${b}. Topics to favour: ${favoured.join(', ') || 'all'}.`, 2000, QUIZ_TIMEOUT_MS);
     return validateQuiz(extractJson(raw));
   } catch (e) {
     return fallbackQuiz(10);

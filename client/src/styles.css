@@ -41,7 +41,12 @@ h2, h3 { color: var(--teal); }
 .option:disabled { cursor: default; opacity: 0.7; }
 .option.correct { border-color: var(--green); background: #E6F6EC; }
 .option.wrong { border-color: #C0392B; background: #FDECEA; }
-.hint-link { color: var(--teal); font-size: 14px; font-weight: 700; white-space: nowrap; }
+.option-row { display: flex; gap: 8px; align-items: stretch; }
+.option-row .option { flex: 1; }
+.option.picked { border-color: var(--teal); background: #E3F1F0; opacity: 1; }
+.hint-btn { flex: 0 0 auto; min-width: 56px; border: 2px solid var(--gold); background: #FFF8E1; color: #5a3d00; border-radius: 16px; font-size: 15px; font-weight: 700; cursor: pointer; padding: 0 14px; }
+.hint-btn:hover { background: #FFEFC2; }
+.option:focus-visible, .hint-btn:focus-visible, .btn:focus-visible, .choice:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 .hint { background: #FFF8E1; border-left: 4px solid var(--gold); padding: 12px 14px; border-radius: 8px; }
 .narration { border-top: 4px solid var(--green); }
 .hero-level { font-size: 26px; font-weight: 800; color: var(--teal); text-align: center; }
@@ -55,6 +60,7 @@ footer { text-align: center; font-size: 12px; color: #667; padding: 16px; }
   .card { padding: 16px; }
   .topbar strong { font-size: 16px; }
   .monthbar { flex-direction: column; gap: 4px; }
+  .hint-btn-text { display: none; }
 }
 .error { background: #FDECEA; border-left: 4px solid #C0392B; padding: 10px 12px; border-radius: 8px; color: #7B241C; font-weight: 600; }
 .mono { font-family: ui-monospace, Menlo, Consolas, monospace; word-break: break-all; }

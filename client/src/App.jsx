@@ -97,6 +97,7 @@ export default function App() {
   const [narrating, setNarrating] = useState(false);
   const [hint, setHint] = useState('');
   const [hintLoading, setHintLoading] = useState(false);
+  const [hintFor, setHintFor] = useState('');
   const [soundOn, setSoundOn] = useState(false); // sound OFF by default
   const [history, setHistory] = useState([]);
   // Quiz state
@@ -116,9 +117,9 @@ export default function App() {
   const [levelNote, setLevelNote] = useState('');
   const [leaderboard, setLeaderboard] = useState([]);
   const [weakness, setWeakness] = useState([]);
-  const timerRef = useRef(null);
-  const quizAnswersRef = useRef([]);
-  useEffect(() => { quizAnswersRef.current = quizAnswers; });
+  const quizPrefetch = useRef(null);
+  const finishQuizRef = useRef(null);
+  const quizDoneRef = useRef(false);
 
   const month = SCHOOL_MONTHS[turn] || 'August';
   const season = seasonForMonth(month);
@@ -153,6 +154,7 @@ export default function App() {
       setJoining(false);
       setSessionCode(code);
     }
+    quizPrefetch.current = null;
     setOrder(shuffle(SCENARIOS).slice(0, 12).map((s) => s.id));
     setMeters(INITIAL_METERS); setTurn(0); setHistory([]); setTopicStats({}); setQuizTotal({ correct: 0, total: 0 });
     setChosen(null); setNarration(null); setScreen('play');
@@ -186,7 +188,7 @@ export default function App() {
   }
   async function showHint(option) {
     clickSound();
-    setHintLoading(true); setHint('');
+    setHintLoading(true); setHint(''); setHintFor(option.label);
     try {
       const r = await postJson('/api/hint', { scenarioId: scenario.id, optionIndex: scenario.options.indexOf(option), ageBand });
       setHint(r && r.text ? r.text : option.hint);
@@ -200,18 +202,33 @@ export default function App() {
     setTurn(turn + 1);
   }
 
+  // Generating 10 AI questions takes longer than a narration, so the quiz is
+  // requested in the background as soon as a quiz month starts, while the
+  // pupil is still reading the scenario. Resolves to null on any failure.
+  function fetchQuiz() {
+    const weakTopics = Object.entries(topicStats).sort((a, b) => (b[1].wrong - b[1].correct) - (a[1].wrong - a[1].correct)).map(([t]) => t);
+    return postJson('/api/quiz', { ageBand, topics: weakTopics }, 25000)
+      // Only AI questions are used as a fixed list; if the server fell back to
+      // its question bank, the client's own adaptive quiz is better.
+      .then((r) => (r && r.source === 'ai' && Array.isArray(r.questions) && r.questions.length >= 5 ? r : null))
+      .catch(() => null);
+  }
+  useEffect(() => {
+    if (screen === 'play' && isQuizTurn && !quizPrefetch.current) quizPrefetch.current = fetchQuiz();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, turn]);
+
   async function startQuiz() {
-    setScreen('quiz'); setQuizAnswers([]); setQuizSelected(null); setQuizTime(300); setLevelNote('');
+    setScreen('quiz'); setQuizList([]); setQuizIndex(0); setQuizAnswers([]); setQuizSelected(null); setQuizTime(300); setLevelNote('');
     setQuizDifficulty(Object.fromEntries(TOPICS.map((t) => [t, 1])));
     setQuizStreak({}); setQuizTopicIdx(0);
-    const weakTopics = Object.entries(topicStats).sort((a, b) => (a[1].wrong - a[1].correct) - (b[1].wrong - b[1].correct)).map(([t]) => t);
-    try {
-      const r = await postJson('/api/quiz', { ageBand, topics: weakTopics });
-      if (r && Array.isArray(r.questions) && r.questions.length >= 5) {
-        setQuizSource(r.source || 'ai'); setQuizMode('ai'); setQuizList(r.questions); setQuizIndex(0); return;
-      }
-      throw new Error('bad-quiz');
-    } catch (e) {
+    quizDoneRef.current = false;
+    const pending = quizPrefetch.current || fetchQuiz();
+    quizPrefetch.current = null;
+    const r = await pending;
+    if (r) {
+      setQuizSource(r.source || 'ai'); setQuizMode('ai'); setQuizList(r.questions); setQuizIndex(0);
+    } else {
       setQuizSource('fallback'); setQuizMode('adaptive');
       const pool = shuffle(fallback.questions);
       const firstTopic = TOPICS[0];
@@ -220,15 +237,16 @@ export default function App() {
     }
   }
   const currentQuiz = quizList[quizIndex];
+  const quizReady = quizList.length > 0;
+  // The 5-minute clock only runs once questions have loaded.
   useEffect(() => {
-    if (screen !== 'quiz') { if (timerRef.current) clearInterval(timerRef.current); return; }
-    timerRef.current = setInterval(() => setQuizTime((t) => {
-      if (t <= 1) { clearInterval(timerRef.current); finishQuiz(); return 0; }
-      return t - 1;
-    }), 1000);
-    return () => clearInterval(timerRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [screen, quizIndex]);
+    if (screen !== 'quiz' || !quizReady) return undefined;
+    const id = setInterval(() => setQuizTime((t) => Math.max(0, t - 1)), 1000);
+    return () => clearInterval(id);
+  }, [screen, quizReady]);
+  useEffect(() => {
+    if (screen === 'quiz' && quizReady && quizTime === 0) finishQuizRef.current();
+  }, [screen, quizReady, quizTime]);
   function answerQuiz(idx) {
     if (quizSelected !== null || !currentQuiz) return;
     clickSound();
@@ -254,7 +272,7 @@ export default function App() {
       if (quizIndex + 1 >= quizList.length) { finishQuiz(); return; }
       setQuizIndex(quizIndex + 1); return;
     }
-    if (quizAnswers.length + 1 >= 10) { finishQuiz(); return; }
+    if (quizAnswers.length >= 10 || !quizPool.length) { finishQuiz(); return; }
     const nextTopicIdx = (quizTopicIdx + 1) % TOPICS.length;
     const topic = TOPICS[nextTopicIdx];
     const diff = quizDifficulty[topic] || 1;
@@ -264,8 +282,9 @@ export default function App() {
     setQuizList((l) => [...l, nextQ]); setQuizIndex(quizIndex + 1);
   }
   function finishQuiz() {
-    if (timerRef.current) clearInterval(timerRef.current);
-    const answers = quizAnswersRef.current.length ? quizAnswersRef.current : quizAnswers;
+    if (quizDoneRef.current) return;
+    quizDoneRef.current = true;
+    const answers = quizAnswers;
     const correct = answers.filter((a) => a.correct).length;
     const total = answers.length || 1;
     const newTotals = { correct: quizTotal.correct + correct, total: quizTotal.total + total };
@@ -274,6 +293,7 @@ export default function App() {
     if (turn + 1 >= 12) { finishYear(newTotals); return; }
     setTurn(turn + 1); setScreen('play');
   }
+  finishQuizRef.current = finishQuiz;
   function finishYear(passedTotals) {
     const totals = passedTotals || quizTotal;
     const quizPct = totals.total ? Math.round(100 * totals.correct / totals.total) : 0;
@@ -352,17 +372,21 @@ export default function App() {
             <span className="tag">{scenario.category}</span>
             <h2>{scenario.title}</h2>
             <p>{scenario.context}</p>
-            {!chosen && <p className="small">Tap an option for an Auntie Green hint (it will not reveal the outcome).</p>}
+            {!chosen && <p className="small">Tap an option to choose it. Not sure? Tap 💡 next to an option for an Auntie Green hint first (it will not reveal the outcome).</p>}
             <div className="options">
               {scenario.options.map((o, i) => (
-                <button key={i} className="option" disabled={!!chosen} onClick={() => choose(o)}>
-                  <span>{o.label}</span>
-                  {!chosen && <span className="hint-link" onClick={(e) => { e.stopPropagation(); showHint(o); }}>💡 Hint</span>}
-                </button>
+                <div key={i} className="option-row">
+                  <button className={'option' + (chosen === o ? ' picked' : '')} disabled={!!chosen} onClick={() => choose(o)}>
+                    <span>{o.label}</span>
+                  </button>
+                  {!chosen && <button className="hint-btn" onClick={() => showHint(o)} aria-label={'Hint for: ' + o.label}>💡<span className="hint-btn-text"> Hint</span></button>}
+                </div>
               ))}
             </div>
-            {hintLoading && <p className="hint">Auntie Green is thinking…</p>}
-            {hint && !chosen && <p className="hint">💡 Auntie Green hint: {hint}</p>}
+            <div aria-live="polite">
+              {hintLoading && <p className="hint">Auntie Green is thinking…</p>}
+              {hint && !chosen && <p className="hint">💡 Auntie Green hint{hintFor ? ` on “${hintFor}”` : ''}: {hint}</p>}
+            </div>
           </section>
           {chosen && (
             <section className="card narration">
@@ -376,7 +400,7 @@ export default function App() {
 
       {screen === 'quiz' && (
         <main className="card">
-          <h2>✏️ Climate Quiz — Question {quizIndex + 1} of 10</h2>
+          <h2>✏️ Climate Quiz — Question {quizIndex + 1} of {quizMode === 'ai' && quizReady ? quizList.length : 10}</h2>
           <p>Time left: <strong>{Math.floor(quizTime / 60)}:{String(quizTime % 60).padStart(2, '0')}</strong> · Source: {quizSource === 'ai' ? 'AI questions' : 'Question bank (offline)'} · Adaptive level: {currentQuiz ? quizDifficulty[currentQuiz.topic] || 1 : 1}/3</p>
           {levelNote && <p className="hint">{levelNote}</p>}
           {currentQuiz ? (
@@ -392,11 +416,11 @@ export default function App() {
                 <div className="narration">
                   <p>{quizSelected === currentQuiz.answer ? '✅ Correct!' : '❌ Not quite — the answer is: ' + currentQuiz.options[currentQuiz.answer]}</p>
                   <p>{currentQuiz.explanation}</p>
-                  <button className="btn primary" onClick={nextQuizQuestion}>{quizIndex + 1 >= 10 && quizMode === 'ai' ? 'Finish quiz' : 'Next question ▶'}</button>
+                  <button className="btn primary" onClick={nextQuizQuestion}>{(quizMode === 'ai' ? quizIndex + 1 >= quizList.length : quizAnswers.length >= 10) ? 'Finish quiz' : 'Next question ▶'}</button>
                 </div>
               )}
             </>
-          ) : <p>Loading questions…</p>}
+          ) : <p>Auntie Green is preparing your questions… The timer starts when they appear.</p>}
         </main>
       )}
 

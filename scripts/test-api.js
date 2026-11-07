@@ -93,5 +93,9 @@ function call(handler, { method = 'POST', query = {}, body = {}, ip = '10.0.0.1'
   process.env.ANTHROPIC_API_KEY = '';
   assert.strictEqual(await allowAi({ headers: {}, socket: { remoteAddress: '10.1.1.1' } }), false, 'no key -> no AI');
 
+  // Safety filter: whole words, no false positives on normal science text.
+  ['Boiling kills germs.', 'Learn new skills in the school garden.', 'Fish kill mosquito larvae in the pond.'].forEach((t) => assert.ok(lib.isCleanText(t), 'should allow: ' + t));
+  ['He was murdered.', 'A bomb went off.', 'Talk about sex.'].forEach((t) => assert.ok(!lib.isCleanText(t), 'should block: ' + t));
+
   console.log('API self-test PASSED');
 })().catch((e) => { console.error('API self-test FAILED:', e); process.exit(1); });
