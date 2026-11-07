@@ -77,10 +77,21 @@ function Meter({ label, icon, value, isBudget }) {
   return (
     <div className="meter">
       <div className="meter-head"><span>{icon} {label}</span><strong>{isBudget ? naira(value) : value + '/100'}</strong></div>
-      <div className="meter-track"><div className="meter-fill" style={{ width: value + '%' }} /></div>
+      <div className="meter-track" role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={value} aria-valuetext={isBudget ? naira(value) : value + ' out of 100'}><div className="meter-fill" style={{ width: value + '%' }} /></div>
     </div>
   );
 }
+
+// Progress is saved on this device at the start of each month, so a refresh,
+// a flat battery or a shared computer does not lose the school year.
+const SAVE_KEY = 'cas-save-v1';
+function readSave() {
+  try {
+    const d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    return d && Array.isArray(d.order) && d.order.length === 12 && d.order.every((id) => SCENARIOS.some((x) => x.id === id)) ? d : null;
+  } catch (e) { return null; }
+}
+function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ } }
 
 function teacherCodeFromUrl() {
   try {
@@ -128,6 +139,7 @@ export default function App() {
   const [levelNote, setLevelNote] = useState('');
   const [leaderboard, setLeaderboard] = useState([]);
   const [weakness, setWeakness] = useState([]);
+  const [saved, setSaved] = useState(readSave);
   const quizPrefetch = useRef(null);
   const finishQuizRef = useRef(null);
   const quizDoneRef = useRef(false);
@@ -166,6 +178,7 @@ export default function App() {
       setSessionCode(code);
     }
     quizPrefetch.current = null;
+    clearSave(); setSaved(null);
     setOrder(pickYear());
     setMeters(INITIAL_METERS); setTurn(0); setHistory([]); setTopicStats({}); setQuizTotal({ correct: 0, total: 0 });
     setChosen(null); setNarration(null); setScreen('play');
@@ -253,6 +266,23 @@ export default function App() {
       setQuizPool(pool.filter((q) => q !== first)); setQuizList([first]); setQuizIndex(0);
     }
   }
+  useEffect(() => {
+    if (screen !== 'play' || chosen || !order.length) return;
+    const snapshot = { ageBand, mode, nickname, sessionCode, meters, turn, order, history, topicStats, quizTotal, savedAt: Date.now() };
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(snapshot)); } catch (e) { /* storage full or blocked */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, turn, chosen, order]);
+  function resumeGame() {
+    const d = saved;
+    if (!d) return;
+    clickSound();
+    quizPrefetch.current = null;
+    setAgeBand(d.ageBand); setMode(d.mode); setNickname(d.nickname || ''); setSessionCode(d.sessionCode || '');
+    setMeters(d.meters); setTurn(d.turn); setOrder(d.order); setHistory(d.history || []);
+    setTopicStats(d.topicStats || {}); setQuizTotal(d.quizTotal || { correct: 0, total: 0 });
+    setChosen(null); setNarration(null); setHint(''); setMonthNote(null); setScreen('play');
+  }
+
   const currentQuiz = quizList[quizIndex];
   const quizReady = quizList.length > 0;
   // The 5-minute clock only runs once questions have loaded.
@@ -331,6 +361,7 @@ export default function App() {
         })
         .catch(() => setClassSync('device'));
     }
+    clearSave(); setSaved(null);
     setScreen('report');
   }
 
@@ -348,6 +379,13 @@ export default function App() {
       {screen === 'onboarding' && (
         <main className="card">
           <h1>Welcome, Environment Prefect!</h1>
+          {saved && (
+            <div className="class-box">
+              <p><strong>Welcome back!</strong> You have a school year in progress: {SCHOOL_MONTHS[saved.turn]}, month {saved.turn + 1} of 12{saved.nickname ? ' (' + saved.nickname + ')' : ''}.</p>
+              <button className="btn primary" onClick={resumeGame}>Continue my school year ▶</button>
+              <p className="small">Starting a new year below replaces this saved game.</p>
+            </div>
+          )}
           <p>Run Greenfield Model School for one school year. Each month, a real Nigerian school problem lands on your desk. Your choices move five meters — and Auntie Green explains the science behind what happens.</p>
           <h2>Choose your age band</h2>
           <div className="choices">
