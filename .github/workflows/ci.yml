@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            client/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix client
+      - name: Self-tests (no API key)
+        run: npm test
+      - name: Build client
+        run: npm run build --prefix client
+      - name: API key never reaches the client bundle
+        run: "! grep -r ANTHROPIC_API_KEY client/dist/"

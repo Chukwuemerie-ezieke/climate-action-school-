@@ -14,9 +14,11 @@ and finish with a **School Green Report Card** — plus real actions for your ac
   Claude directly and never sees the API key.
 - **Vercel-ready:** `vercel.json` builds the client to `client/dist` and runs
   `api/*.js` as serverless functions.
-- **Fully playable offline:** if Claude is unreachable, slow (> 5 seconds), or no key
+- **Fully playable offline:** if Claude is unreachable, slow, rate-limited, or no key
   is configured, the game falls back to the built-in storybook and question bank —
   no error, no dead end.
+- **Progress is saved on the device** at the start of each month; after a refresh
+  the start screen offers *Continue my school year*.
 
 ## Game loop
 
@@ -24,11 +26,18 @@ and finish with a **School Green Report Card** — plus real actions for your ac
    with every Claude call so language and difficulty scale. Choose Solo or Class Mode.
 2. **Dashboard** — 5 animated meters: Eco Score, Budget (starts at ₦500,000;
    meter 100 = ₦500,000), Health & Safety, Student Morale, School Reputation.
-   Month indicator, scenario card, decision buttons. Tap **💡 Hint** on any option
-   for a short Auntie Green hint that never reveals the outcome.
-3. **Scenarios** — 12 turns drawn at random from a pool of **32 Nigerian scenarios**
+   Month indicator, scenario card, decision buttons. Tap the **💡** button beside any
+   option for a short Auntie Green hint that never reveals the outcome (tapping the
+   option itself chooses it). Options that cost money show their price, and options
+   the school cannot afford are disabled.
+   **Running costs of ₦25,000** are taken from the budget every month. If the budget
+   reaches zero, small repairs are delayed (Health −4, Morale −4).
+3. **Scenarios** — 12 turns: 10 drawn at random from a pool of **32 Nigerian scenarios**
    (generator fuel, plastic-blocked drainage, dusty fields, leaking boreholes,
-   harmattan, Lagos-style flooding, solar vs kerosene, school farms and more).
+   harmattan, Lagos-style flooding, solar vs kerosene, school farms and more), plus
+   **2 budget-crunch scenarios** (from 4) with genuine trade-offs: a PTA levy
+   shortfall, a generator breakdown, a sponsor with strings attached, roof repair
+   vs solar savings.
 4. **Auntie Green narration** — after each decision, a warm, locally relevant
    explanation (max 80 words) of the real-world science, ending with one
    constructive tip. Light Pidgin flavour is allowed; content is age-appropriate
@@ -40,7 +49,9 @@ and finish with a **School Green Report Card** — plus real actions for your ac
    **Adaptive difficulty, tracked per topic:** 3 correct in a row → harder;
    2 wrong in a row → easier.
 6. **Report Card** — Green Hero Level (Bronze → Silver → Gold → **Platinum Eco
-   Champion**, with Green Sprout below Bronze), confetti on Gold+, and 3–5 real
+   Champion**, with Green Sprout below Bronze), based on a **Green Score**: 40% Eco
+   plus 15% each for Budget, Health & Safety, Morale and Reputation. Letting any meter
+   fall below 20 drops the level one step. Confetti on Gold+, and 3–5 real
    actions tailored to your weakest meters and topics, for your actual school.
 7. **Replayability** — a fresh random set of 12 scenarios each play-through.
 
@@ -66,25 +77,43 @@ npm run dev:server   # terminal 1
 npm run dev:client   # terminal 2 — http://localhost:5173
 ```
 
-### Self-test (fallback path, no key needed)
+### Self-tests (no key needed)
 
 ```bash
-npm run test:fallback
-# PASSED: scenarios=32 narrations=32 questions=60
+npm test
+# Fallback self-test PASSED: scenarios=36 narrations=36 questions=60
+# API self-test PASSED
 ```
+
+`test:fallback` checks the content (every scenario has a narration and at least
+one free option, each year has 2 crunch scenarios, quiz shape). `test:api` checks
+Class Mode, server-side scenario lookup, rate limits and the safety filter.
+GitHub Actions runs both plus the client build on every push and pull request.
 
 ## API endpoints (server only)
 
 | Endpoint | Method | Body | Returns |
 |---|---|---|---|
-| `/api/health` | GET | — | `{ ok, aiConfigured, mode }` (never reveals key validity) |
-| `/api/narrate` | POST | `scenarioId, scenarioTitle, scenarioContext, choiceLabel, consequence, ageBand` | `{ text, tip, source: "ai" \| "fallback" }` |
+| `/api/health` | GET | — | `{ ok, aiConfigured, mode, classStorage: "shared" \| "memory" }` (never reveals key validity) |
+| `/api/narrate` | POST | `scenarioId, optionIndex, ageBand` | `{ text, tip, source: "ai" \| "fallback" }` |
 | `/api/quiz` | POST | `ageBand, topics[]` | `{ questions: [...10], source }` |
-| `/api/hint` | POST | `scenarioTitle, optionLabel, ageBand` | `{ text, source }` |
-| `/api/class` | POST/GET | `action=create\|join\|result`, `code, nickname` | session code, leaderboard, anonymous topic weakness |
+| `/api/hint` | POST | `scenarioId, optionIndex, ageBand` | `{ text, source }` |
+| `/api/class` | POST | `action=create` | `{ code }` |
+| `/api/class` | POST | `action=join`, `code, nickname` | `{ ok }`, or 404 for an unknown code |
+| `/api/class` | POST | `action=result`, `code, nickname, eco, green, quiz, topicStats[]` | updated `{ leaderboard, weakness }` |
+| `/api/class` | GET | `code` | `{ leaderboard, weakness, players }` |
 
-Claude calls use a **5-second timeout** (`AbortController`) and structured-JSON
-prompts. Responses are validated server-side (narration ≤ 80 words, quiz =
+**The browser only sends ids.** The server looks up the scenario and option text
+itself, so the endpoints cannot be used to send arbitrary prompts to Claude.
+
+**Cost guards:** at most `AI_RATE_LIMIT_PER_IP` AI calls per IP per 10 minutes
+(default 120) and `AI_DAILY_LIMIT` per day overall (default 5000). Past a limit,
+the game silently uses fallback content. CORS is off unless `ALLOWED_ORIGINS` is set.
+
+Claude calls use a **5-second timeout** for narration and hints and **20 seconds**
+for quizzes, which the client requests in the background as soon as a quiz month
+starts (the 5-minute quiz timer starts only when questions appear). Prompts use
+structured JSON. Responses are validated server-side (narration ≤ 80 words, quiz =
 10 questions × 4 options with a valid answer index, one-sentence explanations,
 topic allow-list, content guard). Anything invalid → fallback content.
 The key is read from `process.env.ANTHROPIC_API_KEY` only, is never logged,
@@ -105,6 +134,9 @@ and never appears in the client bundle (verified: `grep -r ANTHROPIC_API_KEY cli
 ```
 
 Effects are meter deltas, clamped to 0–100 by the game. Budget: −10 ≈ ₦50,000.
+Every scenario needs at least one option with `budget >= 0`, because options the
+school cannot afford are disabled (the self-test checks this). Add `crunch: true`
+for a budget-crunch scenario; two are placed in every year.
 Then add a matching narration to `client/src/data/fallback-content.json`
 (`narrations[]`, keyed by `scenarioId`, ≤ 80 words, with a `tip`).
 
@@ -123,14 +155,21 @@ Difficulty: 1 (easiest) to 3. Re-run `npm run test:fallback` after editing.
 - **Nickname only.** Pupils join with a nickname and a teacher-generated session
   code (e.g. `GREEN-XXXX`). No real names, ages, school names, photos, emails or
   device identifiers are collected or stored.
-- **Leaderboard** shows nicknames + Eco/Quiz scores only.
+- **Leaderboard** shows nicknames + Green Score / Eco / Quiz scores only.
+- **Teacher dashboard:** after *Create teacher session code*, tap *Open teacher
+  dashboard*. It refreshes every 10 seconds and can be bookmarked
+  (`…/?teacher=GREEN-XXXX`). Pupils appear when they finish their year; replaying
+  under the same nickname replaces their earlier score.
 - **Topic-weakness report is anonymous** — it aggregates correct/wrong counts per
   topic across the class, so a teacher can screenshot it without identifying any child.
 - **Local-first:** class results are also saved in the browser's localStorage under
   the session code, so a class works offline on one device.
-- **Server sessions are in-memory and not durable** on Vercel serverless (instances
-  do not share memory). For multi-device classroom use, run the Express server
-  (`npm start`) on one local network, or add a small database session store later.
+- **Shared class storage:** on Vercel, add an **Upstash Redis** store from the
+  Vercel Marketplace (it sets `KV_REST_API_URL` and `KV_REST_API_TOKEN`). Sessions
+  then work across every device and serverless instance and expire after 14 days.
+  Check `/api/health` shows `"classStorage": "shared"`. Without it, sessions live
+  in server memory: fine for `npm start` on one school network, but not reliable on
+  Vercel, where each instance has its own memory.
   This build does **not** claim NDPA/NDPR compliance — it is designed to minimise
   personal data so a school's own data-protection review is straightforward.
 - **Safeguarding:** all content is age-appropriate; AI prompts forbid political,
@@ -147,7 +186,7 @@ Difficulty: 1 (easiest) to 3. Re-run `npm run test:fallback` after editing.
 - Low-bandwidth tolerant: the whole fallback game is a few hundred KB; no
   images, no fonts to download, no tracking scripts.
 
-## Deploy to GitHub Pages (temporary, until 1 Nov 2026)
+## Deploy to GitHub Pages (legacy — the move to Vercel was due 1 Nov 2026)
 
 GitHub Pages serves static files only, so the Express/Claude backend does **not**
 run there. The game still plays fully, using the built-in fallback storybook and
@@ -177,13 +216,18 @@ the Vercel move, or the Pages site will stop working.
 4. Environment variable (optional — game works without it):
    `ANTHROPIC_API_KEY` = your key. Never commit it; use the Vercel dashboard.
    Optionally set `ANTHROPIC_MODEL` (default `claude-haiku-4-5`).
-5. Deploy. The `/api/*` functions run as serverless functions from `api/`.
+5. Storage → add **Upstash Redis** from the Marketplace and connect it to the
+   project, so Class Mode and rate limits are shared across instances.
+6. Optionally tune `AI_RATE_LIMIT_PER_IP` and `AI_DAILY_LIMIT`.
+7. Deploy. The `/api/*` functions run as serverless functions from `api/`.
 
 ## Known limitations
 
 - The 12-turn year runs September–August: the September–July teaching year plus
   an August closing turn, so the turn count matches the brief.
-- Vercel class sessions are per-instance in-memory (see NDPR notes above).
+- Without an Upstash Redis store, Vercel class sessions and rate limits are
+  per-instance in memory (see NDPR notes above).
+- Two pupils who pick the same nickname in one session share a leaderboard row.
 - Vercel deployment itself has not been run from this machine (no Vercel
   credentials were supplied); the `vercel.json` follows Vercel's standard
   static-output + `api/` functions layout. Test the deploy after import and
@@ -196,13 +240,19 @@ the Vercel move, or the Pages site will stop working.
 ```
 client/                 React + Vite frontend
   src/App.jsx           Game loop, quiz, report card, class mode
-  src/data/scenarios.js 32 scenarios, months, seasons
-  src/data/fallback-content.json  32 narrations + 60 quiz questions
+  src/TeacherDashboard.jsx  Live class view for teachers
+  src/classStore.js     Class Mode helpers (API calls, on-device results)
+  src/data/scenarios.js 32 scenarios + 4 budget crunches, months, seasons, running costs
+  src/data/fallback-content.json  36 narrations + 60 quiz questions
   src/styles.css        Teal/gold theme, seasonal backgrounds, confetti
 server/index.js         Local Express server (serves client/dist + /api)
 api/_lib.cjs            Claude proxy, 5s timeout, validation, fallback
-api/narrate.js api/quiz.js api/hint.js api/class.js
-scripts/test-fallback.js  Offline self-test (no key)
+api/_store.cjs          Class sessions + rate limits (Upstash Redis or memory)
+api/_limits.cjs         Client IP and AI cost limits
+api/narrate.js api/quiz.js api/hint.js api/class.js api/health.js
+scripts/test-fallback.js  Content self-test (no key)
+scripts/test-api.js       API self-test: class mode, limits, safety filter
+.github/workflows/ci.yml  Runs the tests and the build on every push/PR
 vercel.json .env.example
 ```
 
