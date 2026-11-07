@@ -79,9 +79,9 @@ async function sessionExists(code) {
   return memGet(k.meta) !== undefined;
 }
 
-async function saveResult(code, nickname, { eco, quiz }, topicStats) {
+async function saveResult(code, nickname, { eco, green, quiz }, topicStats) {
   const k = keys(code);
-  const player = JSON.stringify({ nickname, eco, quiz, at: Date.now() });
+  const player = JSON.stringify({ nickname, eco, green, quiz, at: Date.now() });
   if (hasRedis()) {
     const cmds = [['HSET', k.players, nickname, player]];
     topicStats.forEach((t) => {

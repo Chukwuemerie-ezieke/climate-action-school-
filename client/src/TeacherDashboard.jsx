@@ -49,7 +49,7 @@ export default function TeacherDashboard({ code, onExit }) {
 
       <h2>Leaderboard ({data ? data.leaderboard.length : 0} pupils finished)</h2>
       {data && data.leaderboard.length
-        ? <ol>{data.leaderboard.map((p) => <li key={p.nickname}>{p.nickname} — Eco {p.eco}, Quiz {p.quiz}%</li>)}</ol>
+        ? <ol>{data.leaderboard.map((p) => <li key={p.nickname}>{p.nickname} — Green Score {p.green ?? p.eco}, Eco {p.eco}, Quiz {p.quiz}%</li>)}</ol>
         : <p>No results yet. Pupils appear here when they finish their school year.</p>}
 
       <h2>Topic weakness report (anonymous)</h2>

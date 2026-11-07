@@ -40,10 +40,10 @@ export function readLocalClass(code) {
   } catch (e) { return { players: [], topicStats: {} }; }
 }
 
-export function saveLocalResult(code, nickname, eco, quiz, stats) {
+export function saveLocalResult(code, nickname, { eco, green, quiz }, stats) {
   const data = readLocalClass(code);
   const existing = data.players.find((p) => p.nickname === nickname);
-  if (existing) { existing.eco = eco; existing.quiz = quiz; } else data.players.push({ nickname, eco, quiz });
+  if (existing) Object.assign(existing, { eco, green, quiz }); else data.players.push({ nickname, eco, green, quiz });
   Object.entries(stats).forEach(([topic, v]) => {
     data.topicStats[topic] = data.topicStats[topic] || { correct: 0, wrong: 0 };
     data.topicStats[topic].correct += v.correct || 0;
@@ -53,8 +53,11 @@ export function saveLocalResult(code, nickname, eco, quiz, stats) {
   return data;
 }
 
+// Leaderboard rank: Green Score (all five meters) plus quiz percentage.
+export const rankScore = (p) => (p.green ?? p.eco) + p.quiz;
+
 export function summarise(data) {
-  const leaderboard = [...data.players].sort((a, b) => (b.eco + b.quiz) - (a.eco + a.quiz));
+  const leaderboard = [...data.players].sort((a, b) => rankScore(b) - rankScore(a));
   const weakness = Object.entries(data.topicStats)
     .map(([topic, v]) => ({ topic, correct: v.correct, wrong: v.wrong, accuracy: v.correct + v.wrong ? Math.round(100 * v.correct / (v.correct + v.wrong)) : 0 }))
     .sort((a, b) => a.accuracy - b.accuracy);

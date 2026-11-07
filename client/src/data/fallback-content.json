@@ -159,6 +159,26 @@
       "scenarioId": "s32",
       "text": "A managed pond with fish that eat mosquito larvae can teach water science safely. An unmanaged open pond, though, becomes a mosquito nursery, so rules and care matter as much as the pond itself.",
       "tip": "Never play near water without an adult watching."
+    },
+    {
+      "scenarioId": "c01",
+      "text": "Running a school costs money every single month: salaries, chalk, cleaning, repairs. When income falls short, every choice has a cost. Cutting green projects saves money today, but trees, clean drains and gardens protect health and save money later. Many schools earn from green work: seedlings, compost and crafts from waste can all be sold. A good budget plan balances today's bills with tomorrow's needs.",
+      "tip": "List what your school spends each month and find one green way to save or earn."
+    },
+    {
+      "scenarioId": "c02",
+      "text": "Generators burn diesel or petrol, which costs money and makes smoke. Repairs are expensive, and old engines can leak fumes that harm lungs. Solar power uses free sunshine, but panels and batteries cost money upfront. Sometimes the cheapest choice now is not the cheapest over a whole year. Smart planners compare the cost today with the cost of running something every month.",
+      "tip": "Ask how many hours your school generator runs each day and what that costs."
+    },
+    {
+      "scenarioId": "c03",
+      "text": "Sponsors can help schools, but every deal should be checked. Sugary drinks harm teeth and health, and plastic bottles often end up in drains and cause floods. A good deal helps the school without harming pupils or the environment. Schools can ask sponsors for better options, like water refill stations, or seek grants from education charities, even if the money comes more slowly.",
+      "tip": "Count the plastic bottles thrown away at your school in one day."
+    },
+    {
+      "scenarioId": "c04",
+      "text": "A leaking roof is a safety risk: wet walls grow mould, and water near sockets is dangerous. Solar panels save money for years, but safety comes first. Borrowing money can solve two problems at once, but the debt must be repaid, leaving less for next term. Planning means choosing what matters most now and saving steadily for the rest.",
+      "tip": "Help your class make a list of repairs and rank them by safety first."
     }
   ],
   "questions": [

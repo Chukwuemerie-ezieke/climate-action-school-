@@ -30,7 +30,7 @@ function call(handler, { method = 'POST', query = {}, body = {}, ip = '10.0.0.1'
   // Result without a prior join must still put the pupil on the leaderboard.
   const r1 = await call(cls, { query: { action: 'result' }, body: { code, nickname: 'GreenStar', eco: 80, quiz: 70, topicStats: [{ topic: 'waste', correct: 3, wrong: 1 }, { topic: 'evil', correct: 9, wrong: 0 }] } });
   assert.strictEqual(r1.code, 200);
-  assert.deepStrictEqual(r1.data.leaderboard, [{ nickname: 'GreenStar', eco: 80, quiz: 70 }], 'result response includes updated leaderboard');
+  assert.deepStrictEqual(r1.data.leaderboard, [{ nickname: 'GreenStar', eco: 80, green: 80, quiz: 70 }], 'result response includes updated leaderboard');
   await call(cls, { query: { action: 'result' }, body: { code, nickname: 'Ada<script>', eco: 999, quiz: -5, topicStats: [{ topic: 'waste', correct: 1, wrong: 1 }] } });
   const read = await call(cls, { method: 'GET', query: { code } });
   assert.strictEqual(read.code, 200);

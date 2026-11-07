@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { SCENARIOS, SCHOOL_MONTHS, seasonForMonth, shuffle } from './data/scenarios.js';
+import { SCENARIOS, SCHOOL_MONTHS, seasonForMonth, shuffle, pickYear, MONTHLY_RUNNING_COST, BROKE_PENALTY } from './data/scenarios.js';
 import fallback from './data/fallback-content.json';
 import TeacherDashboard from './TeacherDashboard.jsx';
 import { CODE_RE, postJson, offlineCode, saveLocalResult, summarise } from './classStore.js';
@@ -27,12 +27,22 @@ function pickAdaptive(pool, topic, difficulty) {
   if (byTopic.length) return byTopic.sort((a, b) => Math.abs(a.difficulty - difficulty) - Math.abs(b.difficulty - difficulty))[0];
   return pool[0];
 }
-function heroLevel(eco) {
-  if (eco >= 85) return 'Platinum Eco Champion';
-  if (eco >= 70) return 'Gold Eco Hero';
-  if (eco >= 55) return 'Silver Eco Hero';
-  if (eco >= 40) return 'Bronze Eco Hero';
-  return 'Green Sprout';
+// A green school is not only about the Eco meter: the final level uses all
+// five meters, with Eco counting most. Letting any meter fall below 20 (for
+// example, an empty budget) drops the level by one step.
+const LEVELS = ['Platinum Eco Champion', 'Gold Eco Hero', 'Silver Eco Hero', 'Bronze Eco Hero', 'Green Sprout'];
+const LEVEL_MIN = [85, 70, 55, 40, 0];
+const LOW_METER = 20;
+function greenScore(m) {
+  return Math.round(0.4 * m.eco + 0.15 * (m.budget + m.health + m.morale + m.reputation));
+}
+function heroLevel(m) {
+  const score = greenScore(m);
+  let tier = LEVEL_MIN.findIndex((min) => score >= min);
+  const low = METERS.filter((x) => m[x.key] < LOW_METER);
+  const dropped = low.length > 0 && tier < LEVELS.length - 1;
+  if (dropped) tier += 1;
+  return { score, level: LEVELS[tier], tier, low, dropped };
 }
 function realActions(meters, weakTopics) {
   const bank = {
@@ -98,6 +108,7 @@ export default function App() {
   const [hint, setHint] = useState('');
   const [hintLoading, setHintLoading] = useState(false);
   const [hintFor, setHintFor] = useState('');
+  const [monthNote, setMonthNote] = useState(null);
   const [soundOn, setSoundOn] = useState(false); // sound OFF by default
   const [history, setHistory] = useState([]);
   // Quiz state
@@ -155,7 +166,7 @@ export default function App() {
       setSessionCode(code);
     }
     quizPrefetch.current = null;
-    setOrder(shuffle(SCENARIOS).slice(0, 12).map((s) => s.id));
+    setOrder(pickYear());
     setMeters(INITIAL_METERS); setTurn(0); setHistory([]); setTopicStats({}); setQuizTotal({ correct: 0, total: 0 });
     setChosen(null); setNarration(null); setScreen('play');
   }
@@ -177,6 +188,12 @@ export default function App() {
     setChosen(option);
     const next = { ...meters };
     Object.entries(option.effects).forEach(([k, v]) => { next[k] = clamp((next[k] || 0) + v); });
+    // Monthly running costs come out of the budget; an empty budget means
+    // small repairs are delayed, which hurts Health and Morale.
+    next.budget = clamp(next.budget - MONTHLY_RUNNING_COST);
+    const broke = next.budget === 0;
+    if (broke) Object.entries(BROKE_PENALTY).forEach(([k, v]) => { next[k] = clamp(next[k] + v); });
+    setMonthNote({ broke });
     setMeters(next);
     setHistory((h) => [...h, { month, scenario: scenario.title, choice: option.label }]);
     setNarrating(true);
@@ -304,9 +321,9 @@ export default function App() {
       // Save on this device first so the class works offline, then send the
       // result. The server replies with the updated class view, so there is no
       // separate read that could run before the write lands.
-      const local = summarise(saveLocalResult(sessionCode, nick, meters.eco, quizPct, topicStats));
+      const local = summarise(saveLocalResult(sessionCode, nick, { eco: meters.eco, green: greenScore(meters), quiz: quizPct }, topicStats));
       setLeaderboard(local.leaderboard); setWeakness(local.weakness); setClassSync('saving');
-      postJson('/api/class?action=result', { action: 'result', code: sessionCode, nickname: nick, eco: meters.eco, quiz: quizPct, topicStats: weakTopics })
+      postJson('/api/class?action=result', { action: 'result', code: sessionCode, nickname: nick, eco: meters.eco, green: greenScore(meters), quiz: quizPct, topicStats: weakTopics })
         .then((r) => {
           if (Array.isArray(r.leaderboard)) setLeaderboard(r.leaderboard);
           if (Array.isArray(r.weakness)) setWeakness(r.weakness);
@@ -318,8 +335,8 @@ export default function App() {
   }
 
   const quizPct = quizTotal.total ? Math.round(100 * quizTotal.correct / quizTotal.total) : 0;
-  const level = heroLevel(meters.eco);
-  const showConfetti = screen === 'report' && meters.eco >= 70;
+  const result = heroLevel(meters);
+  const showConfetti = screen === 'report' && result.tier <= 1;
 
   return (
     <div className={`app season-${season}`}>
@@ -372,16 +389,22 @@ export default function App() {
             <span className="tag">{scenario.category}</span>
             <h2>{scenario.title}</h2>
             <p>{scenario.context}</p>
+            {!chosen && <p className="small">Running costs of {naira(MONTHLY_RUNNING_COST)} are paid every month, so plan your spending.</p>}
             {!chosen && <p className="small">Tap an option to choose it. Not sure? Tap 💡 next to an option for an Auntie Green hint first (it will not reveal the outcome).</p>}
             <div className="options">
-              {scenario.options.map((o, i) => (
+              {scenario.options.map((o, i) => {
+                const cost = Math.max(0, -o.effects.budget);
+                const affordable = cost <= meters.budget;
+                return (
                 <div key={i} className="option-row">
-                  <button className={'option' + (chosen === o ? ' picked' : '')} disabled={!!chosen} onClick={() => choose(o)}>
+                  <button className={'option' + (chosen === o ? ' picked' : '')} disabled={!!chosen || !affordable} onClick={() => choose(o)}>
                     <span>{o.label}</span>
+                    {cost > 0 && <span className={'price' + (affordable ? '' : ' unaffordable')}>{affordable ? 'Costs ' + naira(cost) : 'Not enough budget (' + naira(cost) + ')'}</span>}
                   </button>
                   {!chosen && <button className="hint-btn" onClick={() => showHint(o)} aria-label={'Hint for: ' + o.label}>💡<span className="hint-btn-text"> Hint</span></button>}
                 </div>
-              ))}
+                );
+              })}
             </div>
             <div aria-live="polite">
               {hintLoading && <p className="hint">Auntie Green is thinking…</p>}
@@ -391,6 +414,8 @@ export default function App() {
           {chosen && (
             <section className="card narration">
               <h3>🌿 Auntie Green says</h3>
+              {monthNote && <p className="small">💰 Monthly running costs paid: −{naira(MONTHLY_RUNNING_COST)}.</p>}
+              {monthNote && monthNote.broke && <p className="error">The budget is empty! Small repairs are delayed this month (Health −4, Morale −4). Choose cheaper options or raise money.</p>}
               {narrating ? <p>Listening to Auntie Green…</p> : narration && <><p>{narration.text}</p><p><strong>Try this:</strong> {narration.tip}</p><p className="small">Source: {narration.source === 'ai' ? 'Auntie Green (AI)' : 'Auntie Green storybook (offline)'} · {chosen.consequence}</p></>}
               <button className="btn primary" onClick={nextTurn} disabled={narrating}>{isQuizTurn ? 'Take the quiz ✏️' : turn + 1 >= 12 ? 'See my Report Card 🏆' : 'Next month ▶'}</button>
             </section>
@@ -435,8 +460,10 @@ export default function App() {
         <main className="card report">
           {showConfetti && <Confetti />}
           <h1>🏆 School Green Report Card</h1>
-          <p className="hero-level">{level}</p>
-          <p>Eco Score: <strong>{meters.eco}/100</strong> · Quiz: <strong>{quizPct}%</strong> ({quizTotal.correct}/{quizTotal.total})</p>
+          <p className="hero-level">{result.level}</p>
+          <p>Green Score: <strong>{result.score}/100</strong> · Eco: <strong>{meters.eco}/100</strong> · Quiz: <strong>{quizPct}%</strong> ({quizTotal.correct}/{quizTotal.total})</p>
+          <p className="small">Green Score = 40% Eco + 15% each for Budget, Health & Safety, Student Morale and School Reputation.</p>
+          {result.low.length > 0 && <p className="hint">⚠️ {result.low.map((x) => x.label).join(' and ')} fell below {LOW_METER}{result.dropped ? ', so your level dropped one step' : ''}. A green school has to stay safe, happy and able to pay its bills too.</p>}
           <div className="meters">{METERS.map((m) => <Meter key={m.key} label={m.label} icon={m.icon} value={meters[m.key]} isBudget={m.key === 'budget'} />)}</div>
           <h2>Real actions for your actual school</h2>
           <ol>{realActions(meters, weakness.map((w) => w.topic)).map((a, i) => <li key={i}>{a}</li>)}</ol>
@@ -448,7 +475,7 @@ export default function App() {
                 {classSync === 'server' && 'Your result is saved with the class.'}
                 {classSync === 'device' && 'Could not reach the class server, so this shows results saved on this device only.'}
               </p>
-              {leaderboard.length ? <ol>{leaderboard.map((p, i) => <li key={i}>{p.nickname} — Eco {p.eco}, Quiz {p.quiz}%</li>)}</ol> : <p>No class results yet.</p>}
+              {leaderboard.length ? <ol>{leaderboard.map((p, i) => <li key={i}>{p.nickname} — Green Score {p.green ?? p.eco}, Quiz {p.quiz}%</li>)}</ol> : <p>No class results yet.</p>}
               <h2>Topic weakness report (anonymous — screenshot this)</h2>
               {weakness.length ? <ul>{weakness.map((w, i) => <li key={i}>{w.topic}: {w.accuracy}% correct ({w.correct} right, {w.wrong} wrong)</li>)}</ul> : <p>No quiz data yet.</p>}
               <p className="small">This report names topics only, never individual pupils beyond nicknames on the leaderboard.</p>

@@ -32,9 +32,11 @@ function count(v) {
 }
 
 function summarise(session) {
+  // Rank by Green Score (all five meters) plus quiz; older results have no green score.
+  const rank = (p) => (p.green ?? p.eco) + p.quiz;
   const leaderboard = session.players
-    .map(({ nickname, eco, quiz }) => ({ nickname, eco, quiz }))
-    .sort((a, b) => (b.eco + b.quiz) - (a.eco + a.quiz));
+    .map(({ nickname, eco, green, quiz }) => ({ nickname, eco, green: green ?? eco, quiz }))
+    .sort((a, b) => rank(b) - rank(a));
   const weakness = Object.entries(session.topicStats)
     .map(([topic, v]) => ({
       topic, correct: v.correct, wrong: v.wrong,
@@ -77,7 +79,7 @@ module.exports = async function handler(req, res) {
         .map((t) => ({ topic: t.topic, correct: count(t.correct), wrong: count(t.wrong) }));
       // A pupil is added to the class the first time their result arrives,
       // and a replay under the same nickname replaces their earlier score.
-      await store.saveResult(c, nickname, { eco: score(body.eco), quiz: score(body.quiz) }, topicStats);
+      await store.saveResult(c, nickname, { eco: score(body.eco), green: score(body.green ?? body.eco), quiz: score(body.quiz) }, topicStats);
       return res.status(200).json({ ok: true, ...summarise(await store.getSession(c)) });
     }
 
