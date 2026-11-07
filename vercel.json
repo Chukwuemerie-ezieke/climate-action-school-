@@ -1,1 +1,36 @@
-{"$schema":"https://openapi.vercel.sh/vercel.json","buildCommand":"npm run build","headers":[{"headers":[{"key":"X-Content-Type-Options","value":"nosniff"}],"source":"/(.*)"}],"outputDirectory":"client/dist","rewrites":[{"destination":"/api/$1","source":"/api/(.*)"}]}
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
+  "outputDirectory": "client/dist",
+  "functions": {
+    "api/*.js": {
+      "includeFiles": "client/src/data/**",
+      "maxDuration": 30
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    }
+  ]
+}

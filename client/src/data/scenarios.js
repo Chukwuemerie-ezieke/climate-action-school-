@@ -1,4 +1,4 @@
-// 32 Nigerian school scenarios. Effects are meter deltas (clamped 0-100 in App).
+// 32 Nigerian school scenarios plus 4 budget-crunch scenarios. Effects are meter deltas (clamped 0-100 in App).
 // Budget meter: 100 = ₦500,000, so -10 budget ≈ ₦50,000 spent. Hints never reveal outcomes.
 export const SCENARIOS = [
 { id:'s01', title:'Generator fuel wahala', category:'energy', context:'NEPA light has gone again and the school generator drinks fuel like water. Exam week is near and the computer lab needs power. What do you do, Environment Prefect?',
@@ -104,6 +104,7 @@ export const SCENARIOS = [
   options:[
     { label:'Plant grass and shrubs, dig a contour drain, and mulch', hint:'Plants and drains slow water down.', effects:{eco:12,budget:-6,health:6,morale:4,reputation:8}, consequence:'Soil stays put and the fence stands firm.' },
     { label:'Pour concrete over the eroded area', hint:'Concrete can push water problems elsewhere.', effects:{eco:-6,budget:-12,health:0,morale:0,reputation:0}, consequence:'The spot is covered, but run-off speeds up downhill.' },
+    { label:'Ask the Green Club to plant grass cuttings and line the gully with stones they collect', hint:'Free hands and free stones, but is it enough?', effects:{eco:6,budget:0,health:2,morale:4,reputation:4}, consequence:'The cuttings slow the water a little; the worst spot still needs work.' },
     { label:'Wait until the fence falls, then repair it', hint:'Prevention is cheaper than rebuilding.', effects:{eco:-8,budget:-10,health:-6,morale:-2,reputation:-8}, consequence:'The fence falls and repairs cost far more.' } ] },
 { id:'s21', title:'Second-hand uniforms swap', category:'waste', context:'Many pupils outgrow uniforms each term. Parents buy new ones while good uniforms sit unused at home.',
   options:[
@@ -164,7 +165,31 @@ export const SCENARIOS = [
   options:[
     { label:'Build a small covered pond with fish that eat larvae, plus safety rules', hint:'A managed pond teaches; an unmanaged one breeds mosquitoes.', effects:{eco:10,budget:-6,health:6,morale:10,reputation:8}, consequence:'Living science lessons, safely managed.' },
     { label:'Build an open pond with no plan', hint:'Open still water invites mosquitoes.', effects:{eco:2,budget:-4,health:-12,morale:2,reputation:-6}, consequence:'Lessons happen, but mosquito risk rises.' },
-    { label:'Reject the pond idea outright', hint:'Safety rules can make good ideas safe.', effects:{eco:0,budget:0,health:2,morale:-6,reputation:-2}, consequence:'No pond, no living science lessons.' } ] }
+    { label:'Reject the pond idea outright', hint:'Safety rules can make good ideas safe.', effects:{eco:0,budget:0,health:2,morale:-6,reputation:-2}, consequence:'No pond, no living science lessons.' } ] },
+// ---- Budget crunch scenarios: genuine trade-offs, no single perfect answer.
+// Two are drawn into every school year (see pickYear below).
+{ id:'c01', crunch:true, title:'PTA levy comes in short', category:'budget', context:'Only half of the PTA levy has been paid this term. The bursar says the school account is nearly empty, and there are still months to go.',
+  options:[
+    { label:'Hold a Green Fair: sell seedlings, compost and crafts made from waste', hint:'Can green work earn money as well as save it?', effects:{eco:4,budget:10,health:0,morale:8,reputation:8}, consequence:'Parents buy seedlings and crafts, and the fair raises some money.' },
+    { label:'Cut the Green Club budget for the rest of the year', hint:'Savings today, but what stops happening?', effects:{eco:-8,budget:18,health:-2,morale:-8,reputation:-4}, consequence:'The account recovers, but tree care and clean-ups stop.' },
+    { label:'Ask parents for an extra emergency levy', hint:'How do families feel about paying twice?', effects:{eco:0,budget:20,health:0,morale:-4,reputation:-10}, consequence:'Money comes in quickly, but many parents are unhappy.' },
+    { label:'Do nothing and hope the rest of the levy arrives', hint:'Hope is not a budget plan.', effects:{eco:0,budget:0,health:-4,morale:-2,reputation:-2}, consequence:'Small repairs wait, and the account stays tight.' } ] },
+{ id:'c02', crunch:true, title:'Generator breaks before exams', category:'budget', context:'The school generator has broken down two weeks before exams. The repair bill is big, and the computer-based tests need power.',
+  options:[
+    { label:'Pay for a full repair now', hint:'Reliable, but what else will that money not buy?', effects:{eco:-2,budget:-16,health:2,morale:4,reputation:4}, consequence:'The generator works again, but the repair takes a big bite from the budget.' },
+    { label:'Rent solar power packs for exam week only', hint:'Sunshine is free; equipment is not.', effects:{eco:6,budget:-8,health:2,morale:0,reputation:4}, consequence:'Exams run on solar power, at a smaller cost.' },
+    { label:'Move computer tests to paper and teach in daylight', hint:'Cheap, but how will pupils and parents feel?', effects:{eco:4,budget:0,health:0,morale:-6,reputation:-4}, consequence:'No cost, but pupils miss their computer practice.' },
+    { label:'Borrow a neighbour\'s old, smoky generator', hint:'Old engines can be dirty and unsafe.', effects:{eco:-8,budget:-2,health:-6,morale:2,reputation:-2}, consequence:'There is power, but also smoke and noise near classrooms.' } ] },
+{ id:'c03', crunch:true, title:'A sponsor with strings attached', category:'budget', context:'A drinks company offers the school ₦100,000 if its sugary drinks in plastic bottles are sold in the canteen with its logo on the gate.',
+  options:[
+    { label:'Accept the deal as offered', hint:'Easy money, but what comes with it?', effects:{eco:-10,budget:20,health:-6,morale:2,reputation:-6}, consequence:'The budget grows, and so do plastic waste and sugary drinks.' },
+    { label:'Accept only if they fund a water refill station instead', hint:'Can you change the deal so everyone wins?', effects:{eco:4,budget:8,health:4,morale:2,reputation:6}, consequence:'They agree to a smaller deal: a refill station and less money.' },
+    { label:'Decline and apply to an education charity for a green grant', hint:'Grants take time and are not certain.', effects:{eco:2,budget:4,health:0,morale:0,reputation:6}, consequence:'A small grant arrives months later.' } ] },
+{ id:'c04', crunch:true, title:'Roof repair or solar savings?', category:'budget', context:'Heavy rain has damaged the roof of one classroom. The money you saved for solar panels would pay for the repair.',
+  options:[
+    { label:'Use the solar savings to fix the roof now', hint:'Safety first, but the solar dream waits.', effects:{eco:-4,budget:-10,health:10,morale:6,reputation:4}, consequence:'The classroom is safe and dry; solar panels must wait.' },
+    { label:'Move the class to the library and fix the roof next term', hint:'Free for now, but is the library big enough?', effects:{eco:2,budget:0,health:-4,morale:-6,reputation:-2}, consequence:'The savings stay, but the crowded library is uncomfortable.' },
+    { label:'Do both: borrow money to fix the roof and buy solar', hint:'Two wins today, a debt tomorrow.', effects:{eco:6,budget:-22,health:10,morale:6,reputation:4}, consequence:'Roof fixed and solar installed, but the budget is stretched thin.' } ] }
 ];
 export const MONTHS = ['September','October','November','December','January','February','March','April','May','June','July','August'];
 // 12 turns: the September-July teaching year plus an August closing turn,
@@ -174,5 +199,20 @@ export function seasonForMonth(month){
   if (['April','May','June','July','September','October'].includes(month)) return 'rainy';
   if (['December','January','February'].includes(month)) return 'harmattan';
   return 'dry';
+}
+// Budget pressure: running costs (salaries, cleaning, repairs) are taken from
+// the budget every month. 5 = ₦25,000. If the budget hits zero, small repairs
+// are delayed and Health and Morale drop.
+export const MONTHLY_RUNNING_COST = 5;
+export const BROKE_PENALTY = { health: -4, morale: -4 };
+
+// A school year: 12 scenarios, including 2 budget-crunch scenarios placed
+// mid-year (never in the first month).
+export function pickYear(){
+  const regular = shuffle(SCENARIOS.filter((s) => !s.crunch)).slice(0, 10);
+  const crunch = shuffle(SCENARIOS.filter((s) => s.crunch)).slice(0, 2);
+  regular.splice(3, 0, crunch[0]);
+  regular.splice(8, 0, crunch[1]);
+  return regular.map((s) => s.id);
 }
 export function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }

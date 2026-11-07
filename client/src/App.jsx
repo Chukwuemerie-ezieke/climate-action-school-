@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { SCENARIOS, SCHOOL_MONTHS, seasonForMonth, shuffle } from './data/scenarios.js';
+import { SCENARIOS, SCHOOL_MONTHS, seasonForMonth, shuffle, pickYear, MONTHLY_RUNNING_COST, BROKE_PENALTY } from './data/scenarios.js';
 import fallback from './data/fallback-content.json';
+import TeacherDashboard from './TeacherDashboard.jsx';
+import { CODE_RE, postJson, offlineCode, saveLocalResult, summarise } from './classStore.js';
 
 const METERS = [
   { key: 'eco', label: 'Eco Score', icon: '🌿' },
@@ -14,15 +16,6 @@ const INITIAL_METERS = { eco: 50, budget: 100, health: 70, morale: 70, reputatio
 const clamp = (v) => Math.max(0, Math.min(100, Math.round(v)));
 const naira = (meter) => '₦' + (meter * 5000).toLocaleString('en-NG');
 
-async function postJson(path, body, timeoutMs = 6000) {
-  const c = new AbortController();
-  const t = setTimeout(() => c.abort(), timeoutMs);
-  try {
-    const r = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), signal: c.signal });
-    if (!r.ok) throw new Error('http-' + r.status);
-    return await r.json();
-  } finally { clearTimeout(t); }
-}
 function localNarration(scenarioId) {
   const f = fallback.narrations.find((n) => n.scenarioId === scenarioId) || fallback.narrations[0];
   return { text: f.text, tip: f.tip, source: 'fallback' };
@@ -34,12 +27,22 @@ function pickAdaptive(pool, topic, difficulty) {
   if (byTopic.length) return byTopic.sort((a, b) => Math.abs(a.difficulty - difficulty) - Math.abs(b.difficulty - difficulty))[0];
   return pool[0];
 }
-function heroLevel(eco) {
-  if (eco >= 85) return 'Platinum Eco Champion';
-  if (eco >= 70) return 'Gold Eco Hero';
-  if (eco >= 55) return 'Silver Eco Hero';
-  if (eco >= 40) return 'Bronze Eco Hero';
-  return 'Green Sprout';
+// A green school is not only about the Eco meter: the final level uses all
+// five meters, with Eco counting most. Letting any meter fall below 20 (for
+// example, an empty budget) drops the level by one step.
+const LEVELS = ['Platinum Eco Champion', 'Gold Eco Hero', 'Silver Eco Hero', 'Bronze Eco Hero', 'Green Sprout'];
+const LEVEL_MIN = [85, 70, 55, 40, 0];
+const LOW_METER = 20;
+function greenScore(m) {
+  return Math.round(0.4 * m.eco + 0.15 * (m.budget + m.health + m.morale + m.reputation));
+}
+function heroLevel(m) {
+  const score = greenScore(m);
+  let tier = LEVEL_MIN.findIndex((min) => score >= min);
+  const low = METERS.filter((x) => m[x.key] < LOW_METER);
+  const dropped = low.length > 0 && tier < LEVELS.length - 1;
+  if (dropped) tier += 1;
+  return { score, level: LEVELS[tier], tier, low, dropped };
 }
 function realActions(meters, weakTopics) {
   const bank = {
@@ -74,18 +77,39 @@ function Meter({ label, icon, value, isBudget }) {
   return (
     <div className="meter">
       <div className="meter-head"><span>{icon} {label}</span><strong>{isBudget ? naira(value) : value + '/100'}</strong></div>
-      <div className="meter-track"><div className="meter-fill" style={{ width: value + '%' }} /></div>
+      <div className="meter-track" role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={value} aria-valuetext={isBudget ? naira(value) : value + ' out of 100'}><div className="meter-fill" style={{ width: value + '%' }} /></div>
     </div>
   );
 }
 
+// Progress is saved on this device at the start of each month, so a refresh,
+// a flat battery or a shared computer does not lose the school year.
+const SAVE_KEY = 'cas-save-v1';
+function readSave() {
+  try {
+    const d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    return d && Array.isArray(d.order) && d.order.length === 12 && d.order.every((id) => SCENARIOS.some((x) => x.id === id)) ? d : null;
+  } catch (e) { return null; }
+}
+function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ } }
+
+function teacherCodeFromUrl() {
+  try {
+    const c = new URLSearchParams(window.location.search).get('teacher');
+    return c && CODE_RE.test(c.toUpperCase()) ? c.toUpperCase() : '';
+  } catch (e) { return ''; }
+}
+
 export default function App() {
-  const [screen, setScreen] = useState('onboarding');
+  const [screen, setScreen] = useState(() => (teacherCodeFromUrl() ? 'teacher' : 'onboarding'));
   const [ageBand, setAgeBand] = useState('12-14');
   const [mode, setMode] = useState('solo'); // solo | class
   const [nickname, setNickname] = useState('');
   const [sessionCode, setSessionCode] = useState('');
-  const [teacherCode, setTeacherCode] = useState('');
+  const [teacherCode, setTeacherCode] = useState(teacherCodeFromUrl);
+  const [classError, setClassError] = useState('');
+  const [joining, setJoining] = useState(false);
+  const [classSync, setClassSync] = useState('');
   const [meters, setMeters] = useState(INITIAL_METERS);
   const [turn, setTurn] = useState(0);
   const [order, setOrder] = useState([]);
@@ -94,6 +118,8 @@ export default function App() {
   const [narrating, setNarrating] = useState(false);
   const [hint, setHint] = useState('');
   const [hintLoading, setHintLoading] = useState(false);
+  const [hintFor, setHintFor] = useState('');
+  const [monthNote, setMonthNote] = useState(null);
   const [soundOn, setSoundOn] = useState(false); // sound OFF by default
   const [history, setHistory] = useState([]);
   // Quiz state
@@ -113,9 +139,10 @@ export default function App() {
   const [levelNote, setLevelNote] = useState('');
   const [leaderboard, setLeaderboard] = useState([]);
   const [weakness, setWeakness] = useState([]);
-  const timerRef = useRef(null);
-  const quizAnswersRef = useRef([]);
-  useEffect(() => { quizAnswersRef.current = quizAnswers; });
+  const [saved, setSaved] = useState(readSave);
+  const quizPrefetch = useRef(null);
+  const finishQuizRef = useRef(null);
+  const quizDoneRef = useRef(false);
 
   const month = SCHOOL_MONTHS[turn] || 'August';
   const season = seasonForMonth(month);
@@ -133,35 +160,39 @@ export default function App() {
     } catch (e) { /* sound is optional */ }
   }
 
-  function startGame() {
+  async function startGame() {
     clickSound();
-    setOrder(shuffle(SCENARIOS).slice(0, 12).map((s) => s.id));
+    setClassError('');
+    if (mode === 'class') {
+      const code = sessionCode.trim().toUpperCase();
+      if (!CODE_RE.test(code)) { setClassError('Session codes look like GREEN-AB12. Check the code with your teacher.'); return; }
+      setJoining(true);
+      try {
+        await postJson('/api/class?action=join', { action: 'join', code, nickname: nickname.trim() });
+      } catch (e) {
+        // 404 = the server is up but does not know this code. Any other failure
+        // (offline, GitHub Pages) lets the pupil play; results stay on this device.
+        if (e.status === 404) { setJoining(false); setClassError('That session code was not found. Check it with your teacher.'); return; }
+      }
+      setJoining(false);
+      setSessionCode(code);
+    }
+    quizPrefetch.current = null;
+    clearSave(); setSaved(null);
+    setOrder(pickYear());
     setMeters(INITIAL_METERS); setTurn(0); setHistory([]); setTopicStats({}); setQuizTotal({ correct: 0, total: 0 });
     setChosen(null); setNarration(null); setScreen('play');
   }
   async function createTeacherCode() {
+    setClassError('');
     try {
       const r = await postJson('/api/class?action=create', { action: 'create' });
       setTeacherCode(r.code); setSessionCode(r.code);
     } catch (e) {
-      const c = 'GREEN-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+      if (e.status === 429) { setClassError(e.data && e.data.error ? e.data.error : 'Too many sessions created. Try again later.'); return; }
+      const c = offlineCode();
       setTeacherCode(c); setSessionCode(c);
     }
-  }
-  function classKey(code) { return 'cas-class-' + code; }
-  function saveLocalResult(code, nick, eco, quizPct, stats) {
-    try {
-      const raw = localStorage.getItem(classKey(code));
-      const data = raw ? JSON.parse(raw) : { players: [], topicStats: {} };
-      const existing = data.players.find((p) => p.nickname === nick);
-      if (existing) { existing.eco = eco; existing.quiz = quizPct; } else data.players.push({ nickname: nick, eco, quiz: quizPct });
-      Object.entries(stats).forEach(([topic, v]) => {
-        data.topicStats[topic] = data.topicStats[topic] || { correct: 0, wrong: 0 };
-        data.topicStats[topic].correct += v.correct || 0; data.topicStats[topic].wrong += v.wrong || 0;
-      });
-      localStorage.setItem(classKey(code), JSON.stringify(data));
-      return data;
-    } catch (e) { return { players: [], topicStats: {} }; }
   }
 
   async function choose(option) {
@@ -170,23 +201,26 @@ export default function App() {
     setChosen(option);
     const next = { ...meters };
     Object.entries(option.effects).forEach(([k, v]) => { next[k] = clamp((next[k] || 0) + v); });
+    // Monthly running costs come out of the budget; an empty budget means
+    // small repairs are delayed, which hurts Health and Morale.
+    next.budget = clamp(next.budget - MONTHLY_RUNNING_COST);
+    const broke = next.budget === 0;
+    if (broke) Object.entries(BROKE_PENALTY).forEach(([k, v]) => { next[k] = clamp(next[k] + v); });
+    setMonthNote({ broke });
     setMeters(next);
     setHistory((h) => [...h, { month, scenario: scenario.title, choice: option.label }]);
     setNarrating(true);
     try {
-      const r = await postJson('/api/narrate', {
-        scenarioId: scenario.id, scenarioTitle: scenario.title, scenarioContext: scenario.context,
-        choiceLabel: option.label, consequence: option.consequence, ageBand
-      });
+      const r = await postJson('/api/narrate', { scenarioId: scenario.id, optionIndex: scenario.options.indexOf(option), ageBand });
       setNarration(r && r.text ? r : localNarration(scenario.id));
     } catch (e) { setNarration(localNarration(scenario.id)); }
     setNarrating(false);
   }
   async function showHint(option) {
     clickSound();
-    setHintLoading(true); setHint('');
+    setHintLoading(true); setHint(''); setHintFor(option.label);
     try {
-      const r = await postJson('/api/hint', { scenarioTitle: scenario.title, optionLabel: option.label, ageBand });
+      const r = await postJson('/api/hint', { scenarioId: scenario.id, optionIndex: scenario.options.indexOf(option), ageBand });
       setHint(r && r.text ? r.text : option.hint);
     } catch (e) { setHint(option.hint); }
     setHintLoading(false);
@@ -198,18 +232,33 @@ export default function App() {
     setTurn(turn + 1);
   }
 
+  // Generating 10 AI questions takes longer than a narration, so the quiz is
+  // requested in the background as soon as a quiz month starts, while the
+  // pupil is still reading the scenario. Resolves to null on any failure.
+  function fetchQuiz() {
+    const weakTopics = Object.entries(topicStats).sort((a, b) => (b[1].wrong - b[1].correct) - (a[1].wrong - a[1].correct)).map(([t]) => t);
+    return postJson('/api/quiz', { ageBand, topics: weakTopics }, 25000)
+      // Only AI questions are used as a fixed list; if the server fell back to
+      // its question bank, the client's own adaptive quiz is better.
+      .then((r) => (r && r.source === 'ai' && Array.isArray(r.questions) && r.questions.length >= 5 ? r : null))
+      .catch(() => null);
+  }
+  useEffect(() => {
+    if (screen === 'play' && isQuizTurn && !quizPrefetch.current) quizPrefetch.current = fetchQuiz();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, turn]);
+
   async function startQuiz() {
-    setScreen('quiz'); setQuizAnswers([]); setQuizSelected(null); setQuizTime(300); setLevelNote('');
+    setScreen('quiz'); setQuizList([]); setQuizIndex(0); setQuizAnswers([]); setQuizSelected(null); setQuizTime(300); setLevelNote('');
     setQuizDifficulty(Object.fromEntries(TOPICS.map((t) => [t, 1])));
     setQuizStreak({}); setQuizTopicIdx(0);
-    const weakTopics = Object.entries(topicStats).sort((a, b) => (a[1].wrong - a[1].correct) - (b[1].wrong - b[1].correct)).map(([t]) => t);
-    try {
-      const r = await postJson('/api/quiz', { ageBand, topics: weakTopics });
-      if (r && Array.isArray(r.questions) && r.questions.length >= 5) {
-        setQuizSource(r.source || 'ai'); setQuizMode('ai'); setQuizList(r.questions); setQuizIndex(0); return;
-      }
-      throw new Error('bad-quiz');
-    } catch (e) {
+    quizDoneRef.current = false;
+    const pending = quizPrefetch.current || fetchQuiz();
+    quizPrefetch.current = null;
+    const r = await pending;
+    if (r) {
+      setQuizSource(r.source || 'ai'); setQuizMode('ai'); setQuizList(r.questions); setQuizIndex(0);
+    } else {
       setQuizSource('fallback'); setQuizMode('adaptive');
       const pool = shuffle(fallback.questions);
       const firstTopic = TOPICS[0];
@@ -217,16 +266,34 @@ export default function App() {
       setQuizPool(pool.filter((q) => q !== first)); setQuizList([first]); setQuizIndex(0);
     }
   }
-  const currentQuiz = quizList[quizIndex];
   useEffect(() => {
-    if (screen !== 'quiz') { if (timerRef.current) clearInterval(timerRef.current); return; }
-    timerRef.current = setInterval(() => setQuizTime((t) => {
-      if (t <= 1) { clearInterval(timerRef.current); finishQuiz(); return 0; }
-      return t - 1;
-    }), 1000);
-    return () => clearInterval(timerRef.current);
+    if (screen !== 'play' || chosen || !order.length) return;
+    const snapshot = { ageBand, mode, nickname, sessionCode, meters, turn, order, history, topicStats, quizTotal, savedAt: Date.now() };
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(snapshot)); } catch (e) { /* storage full or blocked */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [screen, quizIndex]);
+  }, [screen, turn, chosen, order]);
+  function resumeGame() {
+    const d = saved;
+    if (!d) return;
+    clickSound();
+    quizPrefetch.current = null;
+    setAgeBand(d.ageBand); setMode(d.mode); setNickname(d.nickname || ''); setSessionCode(d.sessionCode || '');
+    setMeters(d.meters); setTurn(d.turn); setOrder(d.order); setHistory(d.history || []);
+    setTopicStats(d.topicStats || {}); setQuizTotal(d.quizTotal || { correct: 0, total: 0 });
+    setChosen(null); setNarration(null); setHint(''); setMonthNote(null); setScreen('play');
+  }
+
+  const currentQuiz = quizList[quizIndex];
+  const quizReady = quizList.length > 0;
+  // The 5-minute clock only runs once questions have loaded.
+  useEffect(() => {
+    if (screen !== 'quiz' || !quizReady) return undefined;
+    const id = setInterval(() => setQuizTime((t) => Math.max(0, t - 1)), 1000);
+    return () => clearInterval(id);
+  }, [screen, quizReady]);
+  useEffect(() => {
+    if (screen === 'quiz' && quizReady && quizTime === 0) finishQuizRef.current();
+  }, [screen, quizReady, quizTime]);
   function answerQuiz(idx) {
     if (quizSelected !== null || !currentQuiz) return;
     clickSound();
@@ -252,7 +319,7 @@ export default function App() {
       if (quizIndex + 1 >= quizList.length) { finishQuiz(); return; }
       setQuizIndex(quizIndex + 1); return;
     }
-    if (quizAnswers.length + 1 >= 10) { finishQuiz(); return; }
+    if (quizAnswers.length >= 10 || !quizPool.length) { finishQuiz(); return; }
     const nextTopicIdx = (quizTopicIdx + 1) % TOPICS.length;
     const topic = TOPICS[nextTopicIdx];
     const diff = quizDifficulty[topic] || 1;
@@ -262,8 +329,9 @@ export default function App() {
     setQuizList((l) => [...l, nextQ]); setQuizIndex(quizIndex + 1);
   }
   function finishQuiz() {
-    if (timerRef.current) clearInterval(timerRef.current);
-    const answers = quizAnswersRef.current.length ? quizAnswersRef.current : quizAnswers;
+    if (quizDoneRef.current) return;
+    quizDoneRef.current = true;
+    const answers = quizAnswers;
     const correct = answers.filter((a) => a.correct).length;
     const total = answers.length || 1;
     const newTotals = { correct: quizTotal.correct + correct, total: quizTotal.total + total };
@@ -272,27 +340,34 @@ export default function App() {
     if (turn + 1 >= 12) { finishYear(newTotals); return; }
     setTurn(turn + 1); setScreen('play');
   }
+  finishQuizRef.current = finishQuiz;
   function finishYear(passedTotals) {
     const totals = passedTotals || quizTotal;
     const quizPct = totals.total ? Math.round(100 * totals.correct / totals.total) : 0;
     const weakTopics = Object.entries(topicStats).map(([topic, v]) => ({ topic, correct: v.correct, wrong: v.wrong, accuracy: v.correct + v.wrong ? Math.round(100 * v.correct / (v.correct + v.wrong)) : 0 })).sort((a, b) => a.accuracy - b.accuracy);
     setWeakness(weakTopics);
     if (mode === 'class' && nickname && sessionCode) {
-      const data = saveLocalResult(sessionCode, nickname, meters.eco, quizPct, topicStats);
-      const lb = [...data.players].sort((a, b) => (b.eco + b.quiz) - (a.eco + a.quiz));
-      setLeaderboard(lb);
-      postJson('/api/class?action=result', { action: 'result', code: sessionCode, nickname, eco: meters.eco, quiz: quizPct, topicStats: weakTopics }).catch(() => {});
-      fetch('/api/class?code=' + encodeURIComponent(sessionCode)).then((r) => r.json()).then((r) => {
-        if (r.leaderboard) setLeaderboard(r.leaderboard);
-        if (r.weakness) setWeakness(r.weakness);
-      }).catch(() => {});
+      const nick = nickname.trim();
+      // Save on this device first so the class works offline, then send the
+      // result. The server replies with the updated class view, so there is no
+      // separate read that could run before the write lands.
+      const local = summarise(saveLocalResult(sessionCode, nick, { eco: meters.eco, green: greenScore(meters), quiz: quizPct }, topicStats));
+      setLeaderboard(local.leaderboard); setWeakness(local.weakness); setClassSync('saving');
+      postJson('/api/class?action=result', { action: 'result', code: sessionCode, nickname: nick, eco: meters.eco, green: greenScore(meters), quiz: quizPct, topicStats: weakTopics })
+        .then((r) => {
+          if (Array.isArray(r.leaderboard)) setLeaderboard(r.leaderboard);
+          if (Array.isArray(r.weakness)) setWeakness(r.weakness);
+          setClassSync('server');
+        })
+        .catch(() => setClassSync('device'));
     }
+    clearSave(); setSaved(null);
     setScreen('report');
   }
 
   const quizPct = quizTotal.total ? Math.round(100 * quizTotal.correct / quizTotal.total) : 0;
-  const level = heroLevel(meters.eco);
-  const showConfetti = screen === 'report' && meters.eco >= 70;
+  const result = heroLevel(meters);
+  const showConfetti = screen === 'report' && result.tier <= 1;
 
   return (
     <div className={`app season-${season}`}>
@@ -304,6 +379,13 @@ export default function App() {
       {screen === 'onboarding' && (
         <main className="card">
           <h1>Welcome, Environment Prefect!</h1>
+          {saved && (
+            <div className="class-box">
+              <p><strong>Welcome back!</strong> You have a school year in progress: {SCHOOL_MONTHS[saved.turn]}, month {saved.turn + 1} of 12{saved.nickname ? ' (' + saved.nickname + ')' : ''}.</p>
+              <button className="btn primary" onClick={resumeGame}>Continue my school year ▶</button>
+              <p className="small">Starting a new year below replaces this saved game.</p>
+            </div>
+          )}
           <p>Run Greenfield Model School for one school year. Each month, a real Nigerian school problem lands on your desk. Your choices move five meters — and Auntie Green explains the science behind what happens.</p>
           <h2>Choose your age band</h2>
           <div className="choices">
@@ -320,13 +402,19 @@ export default function App() {
             <div className="class-box">
               <p><strong>Teachers:</strong> create a session code and share it with pupils. <strong>Pupils:</strong> join with a nickname only — no real names, no personal details.</p>
               <button className="btn secondary" onClick={createTeacherCode}>Create teacher session code</button>
-              {teacherCode && <p className="code">Your session code: <strong>{teacherCode}</strong> — share it in class.</p>}
+              {teacherCode && (
+                <>
+                  <p className="code">Your session code: <strong>{teacherCode}</strong> — share it in class.</p>
+                  <button className="btn secondary" onClick={() => setScreen('teacher')}>Open teacher dashboard 📊</button>
+                </>
+              )}
               <label>Nickname (pupils) <input value={nickname} onChange={(e) => setNickname(e.target.value.slice(0, 20))} placeholder="e.g. GreenStar" /></label>
               <label>Session code <input value={sessionCode} onChange={(e) => setSessionCode(e.target.value.toUpperCase())} placeholder="GREEN-XXXX" /></label>
               <p className="small">NDPR-friendly: only a nickname and a session code are used. Nothing that identifies a real child is collected.</p>
+              {classError && <p className="error" role="alert">{classError}</p>}
             </div>
           )}
-          <button className="btn primary big" onClick={startGame} disabled={mode === 'class' && (!nickname.trim() || !sessionCode.trim())}>Start the school year ▶</button>
+          <button className="btn primary big" onClick={startGame} disabled={joining || (mode === 'class' && (!nickname.trim() || !sessionCode.trim()))}>{joining ? 'Joining class…' : 'Start the school year ▶'}</button>
           <p className="small">12 months · quizzes every 3rd month · plays fully offline if the internet is down. Sound is off by default.</p>
         </main>
       )}
@@ -339,21 +427,33 @@ export default function App() {
             <span className="tag">{scenario.category}</span>
             <h2>{scenario.title}</h2>
             <p>{scenario.context}</p>
-            {!chosen && <p className="small">Tap an option for an Auntie Green hint (it will not reveal the outcome).</p>}
+            {!chosen && <p className="small">Running costs of {naira(MONTHLY_RUNNING_COST)} are paid every month, so plan your spending.</p>}
+            {!chosen && <p className="small">Tap an option to choose it. Not sure? Tap 💡 next to an option for an Auntie Green hint first (it will not reveal the outcome).</p>}
             <div className="options">
-              {scenario.options.map((o, i) => (
-                <button key={i} className="option" disabled={!!chosen} onClick={() => choose(o)}>
-                  <span>{o.label}</span>
-                  {!chosen && <span className="hint-link" onClick={(e) => { e.stopPropagation(); showHint(o); }}>💡 Hint</span>}
-                </button>
-              ))}
+              {scenario.options.map((o, i) => {
+                const cost = Math.max(0, -o.effects.budget);
+                const affordable = cost <= meters.budget;
+                return (
+                <div key={i} className="option-row">
+                  <button className={'option' + (chosen === o ? ' picked' : '')} disabled={!!chosen || !affordable} onClick={() => choose(o)}>
+                    <span>{o.label}</span>
+                    {cost > 0 && <span className={'price' + (affordable ? '' : ' unaffordable')}>{affordable ? 'Costs ' + naira(cost) : 'Not enough budget (' + naira(cost) + ')'}</span>}
+                  </button>
+                  {!chosen && <button className="hint-btn" onClick={() => showHint(o)} aria-label={'Hint for: ' + o.label}>💡<span className="hint-btn-text"> Hint</span></button>}
+                </div>
+                );
+              })}
             </div>
-            {hintLoading && <p className="hint">Auntie Green is thinking…</p>}
-            {hint && !chosen && <p className="hint">💡 Auntie Green hint: {hint}</p>}
+            <div aria-live="polite">
+              {hintLoading && <p className="hint">Auntie Green is thinking…</p>}
+              {hint && !chosen && <p className="hint">💡 Auntie Green hint{hintFor ? ` on “${hintFor}”` : ''}: {hint}</p>}
+            </div>
           </section>
           {chosen && (
             <section className="card narration">
               <h3>🌿 Auntie Green says</h3>
+              {monthNote && <p className="small">💰 Monthly running costs paid: −{naira(MONTHLY_RUNNING_COST)}.</p>}
+              {monthNote && monthNote.broke && <p className="error">The budget is empty! Small repairs are delayed this month (Health −4, Morale −4). Choose cheaper options or raise money.</p>}
               {narrating ? <p>Listening to Auntie Green…</p> : narration && <><p>{narration.text}</p><p><strong>Try this:</strong> {narration.tip}</p><p className="small">Source: {narration.source === 'ai' ? 'Auntie Green (AI)' : 'Auntie Green storybook (offline)'} · {chosen.consequence}</p></>}
               <button className="btn primary" onClick={nextTurn} disabled={narrating}>{isQuizTurn ? 'Take the quiz ✏️' : turn + 1 >= 12 ? 'See my Report Card 🏆' : 'Next month ▶'}</button>
             </section>
@@ -363,7 +463,7 @@ export default function App() {
 
       {screen === 'quiz' && (
         <main className="card">
-          <h2>✏️ Climate Quiz — Question {quizIndex + 1} of 10</h2>
+          <h2>✏️ Climate Quiz — Question {quizIndex + 1} of {quizMode === 'ai' && quizReady ? quizList.length : 10}</h2>
           <p>Time left: <strong>{Math.floor(quizTime / 60)}:{String(quizTime % 60).padStart(2, '0')}</strong> · Source: {quizSource === 'ai' ? 'AI questions' : 'Question bank (offline)'} · Adaptive level: {currentQuiz ? quizDifficulty[currentQuiz.topic] || 1 : 1}/3</p>
           {levelNote && <p className="hint">{levelNote}</p>}
           {currentQuiz ? (
@@ -379,27 +479,41 @@ export default function App() {
                 <div className="narration">
                   <p>{quizSelected === currentQuiz.answer ? '✅ Correct!' : '❌ Not quite — the answer is: ' + currentQuiz.options[currentQuiz.answer]}</p>
                   <p>{currentQuiz.explanation}</p>
-                  <button className="btn primary" onClick={nextQuizQuestion}>{quizIndex + 1 >= 10 && quizMode === 'ai' ? 'Finish quiz' : 'Next question ▶'}</button>
+                  <button className="btn primary" onClick={nextQuizQuestion}>{(quizMode === 'ai' ? quizIndex + 1 >= quizList.length : quizAnswers.length >= 10) ? 'Finish quiz' : 'Next question ▶'}</button>
                 </div>
               )}
             </>
-          ) : <p>Loading questions…</p>}
+          ) : <p>Auntie Green is preparing your questions… The timer starts when they appear.</p>}
         </main>
+      )}
+
+      {screen === 'teacher' && teacherCode && (
+        <TeacherDashboard code={teacherCode} onExit={() => {
+          try { window.history.replaceState(null, '', window.location.pathname); } catch (e) { /* ignore */ }
+          setScreen('onboarding');
+        }} />
       )}
 
       {screen === 'report' && (
         <main className="card report">
           {showConfetti && <Confetti />}
           <h1>🏆 School Green Report Card</h1>
-          <p className="hero-level">{level}</p>
-          <p>Eco Score: <strong>{meters.eco}/100</strong> · Quiz: <strong>{quizPct}%</strong> ({quizTotal.correct}/{quizTotal.total})</p>
+          <p className="hero-level">{result.level}</p>
+          <p>Green Score: <strong>{result.score}/100</strong> · Eco: <strong>{meters.eco}/100</strong> · Quiz: <strong>{quizPct}%</strong> ({quizTotal.correct}/{quizTotal.total})</p>
+          <p className="small">Green Score = 40% Eco + 15% each for Budget, Health & Safety, Student Morale and School Reputation.</p>
+          {result.low.length > 0 && <p className="hint">⚠️ {result.low.map((x) => x.label).join(' and ')} fell below {LOW_METER}{result.dropped ? ', so your level dropped one step' : ''}. A green school has to stay safe, happy and able to pay its bills too.</p>}
           <div className="meters">{METERS.map((m) => <Meter key={m.key} label={m.label} icon={m.icon} value={meters[m.key]} isBudget={m.key === 'budget'} />)}</div>
           <h2>Real actions for your actual school</h2>
           <ol>{realActions(meters, weakness.map((w) => w.topic)).map((a, i) => <li key={i}>{a}</li>)}</ol>
           {mode === 'class' && (
             <>
               <h2>Class leaderboard — {sessionCode}</h2>
-              {leaderboard.length ? <ol>{leaderboard.map((p, i) => <li key={i}>{p.nickname} — Eco {p.eco}, Quiz {p.quiz}%</li>)}</ol> : <p>No class results saved on this device yet.</p>}
+              <p className="small">
+                {classSync === 'saving' && 'Sending your result to the class…'}
+                {classSync === 'server' && 'Your result is saved with the class.'}
+                {classSync === 'device' && 'Could not reach the class server, so this shows results saved on this device only.'}
+              </p>
+              {leaderboard.length ? <ol>{leaderboard.map((p, i) => <li key={i}>{p.nickname} — Green Score {p.green ?? p.eco}, Quiz {p.quiz}%</li>)}</ol> : <p>No class results yet.</p>}
               <h2>Topic weakness report (anonymous — screenshot this)</h2>
               {weakness.length ? <ul>{weakness.map((w, i) => <li key={i}>{w.topic}: {w.accuracy}% correct ({w.correct} right, {w.wrong} wrong)</li>)}</ul> : <p>No quiz data yet.</p>}
               <p className="small">This report names topics only, never individual pupils beyond nicknames on the leaderboard.</p>

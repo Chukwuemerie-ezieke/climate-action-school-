@@ -8,19 +8,19 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-app.use(cors());
+// CORS is off by default: the game calls its own API on the same origin, so
+// other websites cannot use this server (and its Anthropic key) from a browser.
+// Set ALLOWED_ORIGINS=https://a.example,https://b.example to allow others.
+const allowedOrigins = String(process.env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
+if (allowedOrigins.length) app.use('/api', cors({ origin: allowedOrigins }));
+app.disable('x-powered-by');
 app.use(express.json({ limit: '100kb' }));
 
 app.post('/api/narrate', require('../api/narrate.js'));
 app.post('/api/quiz', require('../api/quiz.js'));
 app.post('/api/hint', require('../api/hint.js'));
 app.all('/api/class', require('../api/class.js'));
-app.get('/api/health', (req, res) => res.json({
-  ok: true,
-  aiConfigured: Boolean(process.env.ANTHROPIC_API_KEY),
-  // Never reveal whether a key is valid, only whether one is configured.
-  mode: process.env.ANTHROPIC_API_KEY ? 'ai-with-fallback' : 'fallback-only'
-}));
+app.get('/api/health', require('../api/health.js'));
 
 const dist = path.join(__dirname, '..', 'client', 'dist');
 if (fs.existsSync(dist)) {
