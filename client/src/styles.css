@@ -56,3 +56,6 @@ footer { text-align: center; font-size: 12px; color: #667; padding: 16px; }
   .topbar strong { font-size: 16px; }
   .monthbar { flex-direction: column; gap: 4px; }
 }
+.error { background: #FDECEA; border-left: 4px solid #C0392B; padding: 10px 12px; border-radius: 8px; color: #7B241C; font-weight: 600; }
+.mono { font-family: ui-monospace, Menlo, Consolas, monospace; word-break: break-all; }
+.class-box .btn { margin: 4px 0; }

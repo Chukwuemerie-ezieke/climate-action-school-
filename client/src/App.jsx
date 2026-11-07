@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { SCENARIOS, SCHOOL_MONTHS, seasonForMonth, shuffle } from './data/scenarios.js';
 import fallback from './data/fallback-content.json';
+import TeacherDashboard from './TeacherDashboard.jsx';
+import { CODE_RE, postJson, offlineCode, saveLocalResult, summarise } from './classStore.js';
 
 const METERS = [
   { key: 'eco', label: 'Eco Score', icon: '🌿' },
@@ -14,15 +16,6 @@ const INITIAL_METERS = { eco: 50, budget: 100, health: 70, morale: 70, reputatio
 const clamp = (v) => Math.max(0, Math.min(100, Math.round(v)));
 const naira = (meter) => '₦' + (meter * 5000).toLocaleString('en-NG');
 
-async function postJson(path, body, timeoutMs = 6000) {
-  const c = new AbortController();
-  const t = setTimeout(() => c.abort(), timeoutMs);
-  try {
-    const r = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), signal: c.signal });
-    if (!r.ok) throw new Error('http-' + r.status);
-    return await r.json();
-  } finally { clearTimeout(t); }
-}
 function localNarration(scenarioId) {
   const f = fallback.narrations.find((n) => n.scenarioId === scenarioId) || fallback.narrations[0];
   return { text: f.text, tip: f.tip, source: 'fallback' };
@@ -79,13 +72,23 @@ function Meter({ label, icon, value, isBudget }) {
   );
 }
 
+function teacherCodeFromUrl() {
+  try {
+    const c = new URLSearchParams(window.location.search).get('teacher');
+    return c && CODE_RE.test(c.toUpperCase()) ? c.toUpperCase() : '';
+  } catch (e) { return ''; }
+}
+
 export default function App() {
-  const [screen, setScreen] = useState('onboarding');
+  const [screen, setScreen] = useState(() => (teacherCodeFromUrl() ? 'teacher' : 'onboarding'));
   const [ageBand, setAgeBand] = useState('12-14');
   const [mode, setMode] = useState('solo'); // solo | class
   const [nickname, setNickname] = useState('');
   const [sessionCode, setSessionCode] = useState('');
-  const [teacherCode, setTeacherCode] = useState('');
+  const [teacherCode, setTeacherCode] = useState(teacherCodeFromUrl);
+  const [classError, setClassError] = useState('');
+  const [joining, setJoining] = useState(false);
+  const [classSync, setClassSync] = useState('');
   const [meters, setMeters] = useState(INITIAL_METERS);
   const [turn, setTurn] = useState(0);
   const [order, setOrder] = useState([]);
@@ -133,35 +136,37 @@ export default function App() {
     } catch (e) { /* sound is optional */ }
   }
 
-  function startGame() {
+  async function startGame() {
     clickSound();
+    setClassError('');
+    if (mode === 'class') {
+      const code = sessionCode.trim().toUpperCase();
+      if (!CODE_RE.test(code)) { setClassError('Session codes look like GREEN-AB12. Check the code with your teacher.'); return; }
+      setJoining(true);
+      try {
+        await postJson('/api/class?action=join', { action: 'join', code, nickname: nickname.trim() });
+      } catch (e) {
+        // 404 = the server is up but does not know this code. Any other failure
+        // (offline, GitHub Pages) lets the pupil play; results stay on this device.
+        if (e.status === 404) { setJoining(false); setClassError('That session code was not found. Check it with your teacher.'); return; }
+      }
+      setJoining(false);
+      setSessionCode(code);
+    }
     setOrder(shuffle(SCENARIOS).slice(0, 12).map((s) => s.id));
     setMeters(INITIAL_METERS); setTurn(0); setHistory([]); setTopicStats({}); setQuizTotal({ correct: 0, total: 0 });
     setChosen(null); setNarration(null); setScreen('play');
   }
   async function createTeacherCode() {
+    setClassError('');
     try {
       const r = await postJson('/api/class?action=create', { action: 'create' });
       setTeacherCode(r.code); setSessionCode(r.code);
     } catch (e) {
-      const c = 'GREEN-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+      if (e.status === 429) { setClassError(e.data && e.data.error ? e.data.error : 'Too many sessions created. Try again later.'); return; }
+      const c = offlineCode();
       setTeacherCode(c); setSessionCode(c);
     }
-  }
-  function classKey(code) { return 'cas-class-' + code; }
-  function saveLocalResult(code, nick, eco, quizPct, stats) {
-    try {
-      const raw = localStorage.getItem(classKey(code));
-      const data = raw ? JSON.parse(raw) : { players: [], topicStats: {} };
-      const existing = data.players.find((p) => p.nickname === nick);
-      if (existing) { existing.eco = eco; existing.quiz = quizPct; } else data.players.push({ nickname: nick, eco, quiz: quizPct });
-      Object.entries(stats).forEach(([topic, v]) => {
-        data.topicStats[topic] = data.topicStats[topic] || { correct: 0, wrong: 0 };
-        data.topicStats[topic].correct += v.correct || 0; data.topicStats[topic].wrong += v.wrong || 0;
-      });
-      localStorage.setItem(classKey(code), JSON.stringify(data));
-      return data;
-    } catch (e) { return { players: [], topicStats: {} }; }
   }
 
   async function choose(option) {
@@ -278,14 +283,19 @@ export default function App() {
     const weakTopics = Object.entries(topicStats).map(([topic, v]) => ({ topic, correct: v.correct, wrong: v.wrong, accuracy: v.correct + v.wrong ? Math.round(100 * v.correct / (v.correct + v.wrong)) : 0 })).sort((a, b) => a.accuracy - b.accuracy);
     setWeakness(weakTopics);
     if (mode === 'class' && nickname && sessionCode) {
-      const data = saveLocalResult(sessionCode, nickname, meters.eco, quizPct, topicStats);
-      const lb = [...data.players].sort((a, b) => (b.eco + b.quiz) - (a.eco + a.quiz));
-      setLeaderboard(lb);
-      postJson('/api/class?action=result', { action: 'result', code: sessionCode, nickname, eco: meters.eco, quiz: quizPct, topicStats: weakTopics }).catch(() => {});
-      fetch('/api/class?code=' + encodeURIComponent(sessionCode)).then((r) => r.json()).then((r) => {
-        if (r.leaderboard) setLeaderboard(r.leaderboard);
-        if (r.weakness) setWeakness(r.weakness);
-      }).catch(() => {});
+      const nick = nickname.trim();
+      // Save on this device first so the class works offline, then send the
+      // result. The server replies with the updated class view, so there is no
+      // separate read that could run before the write lands.
+      const local = summarise(saveLocalResult(sessionCode, nick, meters.eco, quizPct, topicStats));
+      setLeaderboard(local.leaderboard); setWeakness(local.weakness); setClassSync('saving');
+      postJson('/api/class?action=result', { action: 'result', code: sessionCode, nickname: nick, eco: meters.eco, quiz: quizPct, topicStats: weakTopics })
+        .then((r) => {
+          if (Array.isArray(r.leaderboard)) setLeaderboard(r.leaderboard);
+          if (Array.isArray(r.weakness)) setWeakness(r.weakness);
+          setClassSync('server');
+        })
+        .catch(() => setClassSync('device'));
     }
     setScreen('report');
   }
@@ -320,13 +330,19 @@ export default function App() {
             <div className="class-box">
               <p><strong>Teachers:</strong> create a session code and share it with pupils. <strong>Pupils:</strong> join with a nickname only — no real names, no personal details.</p>
               <button className="btn secondary" onClick={createTeacherCode}>Create teacher session code</button>
-              {teacherCode && <p className="code">Your session code: <strong>{teacherCode}</strong> — share it in class.</p>}
+              {teacherCode && (
+                <>
+                  <p className="code">Your session code: <strong>{teacherCode}</strong> — share it in class.</p>
+                  <button className="btn secondary" onClick={() => setScreen('teacher')}>Open teacher dashboard 📊</button>
+                </>
+              )}
               <label>Nickname (pupils) <input value={nickname} onChange={(e) => setNickname(e.target.value.slice(0, 20))} placeholder="e.g. GreenStar" /></label>
               <label>Session code <input value={sessionCode} onChange={(e) => setSessionCode(e.target.value.toUpperCase())} placeholder="GREEN-XXXX" /></label>
               <p className="small">NDPR-friendly: only a nickname and a session code are used. Nothing that identifies a real child is collected.</p>
+              {classError && <p className="error" role="alert">{classError}</p>}
             </div>
           )}
-          <button className="btn primary big" onClick={startGame} disabled={mode === 'class' && (!nickname.trim() || !sessionCode.trim())}>Start the school year ▶</button>
+          <button className="btn primary big" onClick={startGame} disabled={joining || (mode === 'class' && (!nickname.trim() || !sessionCode.trim()))}>{joining ? 'Joining class…' : 'Start the school year ▶'}</button>
           <p className="small">12 months · quizzes every 3rd month · plays fully offline if the internet is down. Sound is off by default.</p>
         </main>
       )}
@@ -387,6 +403,13 @@ export default function App() {
         </main>
       )}
 
+      {screen === 'teacher' && teacherCode && (
+        <TeacherDashboard code={teacherCode} onExit={() => {
+          try { window.history.replaceState(null, '', window.location.pathname); } catch (e) { /* ignore */ }
+          setScreen('onboarding');
+        }} />
+      )}
+
       {screen === 'report' && (
         <main className="card report">
           {showConfetti && <Confetti />}
@@ -399,7 +422,12 @@ export default function App() {
           {mode === 'class' && (
             <>
               <h2>Class leaderboard — {sessionCode}</h2>
-              {leaderboard.length ? <ol>{leaderboard.map((p, i) => <li key={i}>{p.nickname} — Eco {p.eco}, Quiz {p.quiz}%</li>)}</ol> : <p>No class results saved on this device yet.</p>}
+              <p className="small">
+                {classSync === 'saving' && 'Sending your result to the class…'}
+                {classSync === 'server' && 'Your result is saved with the class.'}
+                {classSync === 'device' && 'Could not reach the class server, so this shows results saved on this device only.'}
+              </p>
+              {leaderboard.length ? <ol>{leaderboard.map((p, i) => <li key={i}>{p.nickname} — Eco {p.eco}, Quiz {p.quiz}%</li>)}</ol> : <p>No class results yet.</p>}
               <h2>Topic weakness report (anonymous — screenshot this)</h2>
               {weakness.length ? <ul>{weakness.map((w, i) => <li key={i}>{w.topic}: {w.accuracy}% correct ({w.correct} right, {w.wrong} wrong)</li>)}</ul> : <p>No quiz data yet.</p>}
               <p className="small">This report names topics only, never individual pupils beyond nicknames on the leaderboard.</p>
