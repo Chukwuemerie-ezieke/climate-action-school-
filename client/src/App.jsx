@@ -179,10 +179,7 @@ export default function App() {
     setHistory((h) => [...h, { month, scenario: scenario.title, choice: option.label }]);
     setNarrating(true);
     try {
-      const r = await postJson('/api/narrate', {
-        scenarioId: scenario.id, scenarioTitle: scenario.title, scenarioContext: scenario.context,
-        choiceLabel: option.label, consequence: option.consequence, ageBand
-      });
+      const r = await postJson('/api/narrate', { scenarioId: scenario.id, optionIndex: scenario.options.indexOf(option), ageBand });
       setNarration(r && r.text ? r : localNarration(scenario.id));
     } catch (e) { setNarration(localNarration(scenario.id)); }
     setNarrating(false);
@@ -191,7 +188,7 @@ export default function App() {
     clickSound();
     setHintLoading(true); setHint('');
     try {
-      const r = await postJson('/api/hint', { scenarioTitle: scenario.title, optionLabel: option.label, ageBand });
+      const r = await postJson('/api/hint', { scenarioId: scenario.id, optionIndex: scenario.options.indexOf(option), ageBand });
       setHint(r && r.text ? r.text : option.hint);
     } catch (e) { setHint(option.hint); }
     setHintLoading(false);

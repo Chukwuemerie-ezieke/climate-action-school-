@@ -3,18 +3,21 @@
     "cors": "^2.8.5",
     "express": "^4.19.2"
   },
-  "description": "Climate Action School — educational browser game for Harmony Digital Consults Ltd",
+  "description": "Climate Action School \u2014 educational browser game for Harmony Digital Consults Ltd",
   "name": "climate-action-school",
   "private": true,
   "scripts": {
     "build": "npm --prefix client install && npm --prefix client run build",
-    "dev": "node server/index.js",
+    "dev": "node --env-file-if-exists=.env server/index.js",
     "dev:client": "npm --prefix client run dev",
-    "dev:server": "node server/index.js",
-    "start": "node server/index.js",
+    "dev:server": "node --env-file-if-exists=.env server/index.js",
+    "start": "node --env-file-if-exists=.env server/index.js",
     "test:fallback": "node scripts/test-fallback.js",
     "test": "node scripts/test-fallback.js && node scripts/test-api.js",
     "test:api": "node scripts/test-api.js"
   },
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=22.9"
+  }
 }

@@ -1,13 +1,12 @@
-// Vercel serverless handler + Express-compatible handler for /api/narrate
+// Vercel serverless handler + Express-compatible handler for /api/narrate.
+// The client sends only ids; scenario text is looked up on the server.
 const { narrate } = require('./_lib.cjs');
+const { allowAi } = require('./_limits.cjs');
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   const body = req.body || {};
-  // scenarioId is used only to pick the right fallback narration; it is not PII.
-  const result = await narrate({
-    scenarioId: body.scenarioId, scenarioTitle: body.scenarioTitle || '',
-    scenarioContext: body.scenarioContext || '', choiceLabel: body.choiceLabel || '',
-    consequence: body.consequence || '', ageBand: body.ageBand
-  });
+  const result = await narrate(
+    { scenarioId: String(body.scenarioId || ''), optionIndex: body.optionIndex, ageBand: body.ageBand },
+    { ai: await allowAi(req) });
   return res.status(200).json(result);
 };
